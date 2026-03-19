@@ -13,6 +13,7 @@ type IO interface {
 	ReadLine(prompt string) (string, error)
 	ReadSecret(prompt string) (string, error)
 	Println(text string)
+	ClearScreen()
 }
 
 type StdIO struct {
@@ -64,6 +65,10 @@ func (s *StdIO) ReadSecret(prompt string) (string, error) {
 
 func (s *StdIO) Println(text string) {
 	_, _ = fmt.Fprintln(s.writer, text)
+}
+
+func (s *StdIO) ClearScreen() {
+	_, _ = fmt.Fprint(s.writer, "\033[H\033[2J")
 }
 
 func trimLine(line string) string {

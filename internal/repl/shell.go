@@ -72,6 +72,9 @@ func (s *Shell) handleTokens(tokens []string, commandLine string) error {
 	case "help":
 		s.printHelp(tokens[1:])
 		return nil
+	case "clear", "cls":
+		s.io.ClearScreen()
+		return nil
 	case "jobs":
 		return s.handleJobs(tokens)
 	case "datasources":

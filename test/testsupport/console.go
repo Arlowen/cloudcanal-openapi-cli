@@ -41,6 +41,10 @@ func (t *TestConsole) Println(text string) {
 	t.output.WriteString("\n")
 }
 
+func (t *TestConsole) ClearScreen() {
+	t.output.WriteString("\033[H\033[2J")
+}
+
 func (t *TestConsole) Output() string {
 	return t.output.String()
 }

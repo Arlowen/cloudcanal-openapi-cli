@@ -287,6 +287,36 @@ func TestShellExecutesArgsWithoutInteractiveLoop(t *testing.T) {
 	}
 }
 
+func TestShellClearsScreenWithAliases(t *testing.T) {
+	runtime := &fakeRuntime{
+		cfg:         config.AppConfig{APIBaseURL: "https://cc.example.com", AccessKey: "abcdefghijkl", SecretKey: "qrstuvwxyz1234"},
+		dataJobs:    &fakeDataJobs{},
+		dataSources: &fakeDataSources{},
+		clusters:    &fakeClusters{},
+		workers:     &fakeWorkers{},
+		consoleJobs: &fakeConsoleJobs{},
+		jobConfigs:  &fakeJobConfigs{},
+	}
+
+	io := testsupport.NewTestConsole("clear", "cls", "exit")
+	shell := repl.NewShell(io, runtime)
+	if err := shell.Run(); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if got := strings.Count(io.Output(), "\x1b[H\x1b[2J"); got != 2 {
+		t.Fatalf("clear sequence count = %d, want 2 in %q", got, io.Output())
+	}
+
+	io = testsupport.NewTestConsole()
+	shell = repl.NewShell(io, runtime)
+	if err := shell.ExecuteArgs([]string{"clear"}); err != nil {
+		t.Fatalf("ExecuteArgs(clear) error = %v", err)
+	}
+	if !strings.Contains(io.Output(), "\x1b[H\x1b[2J") {
+		t.Fatalf("output missing clear sequence in %q", io.Output())
+	}
+}
+
 func TestShellSwitchesLanguageForFollowUpOutput(t *testing.T) {
 	runtime := &fakeRuntime{
 		cfg:         config.AppConfig{APIBaseURL: "https://cc.example.com", AccessKey: "abcdefghijkl", SecretKey: "qrstuvwxyz1234"},

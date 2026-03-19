@@ -64,6 +64,10 @@ cloudcanal datasources list --type MYSQL
 - `help config`
 - `help lang`
 
+`clear` / `cls`
+
+清空当前终端屏幕，适合在交互模式下快速整理输出内容。
+
 `config show`
 
 显示当前配置，`accessKey` 会做掩码处理，同时会显示当前 `language`。

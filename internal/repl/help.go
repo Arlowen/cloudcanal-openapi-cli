@@ -52,6 +52,8 @@ CloudCanal CLI 帮助
   help lang         查看语言切换命令说明
 
 常用命令：
+  clear             清空当前终端屏幕
+  cls               clear 的别名
   jobs list         列出数据任务
   datasources list  列出数据源
   workers list      列出机器
@@ -78,6 +80,8 @@ Help topics:
   help lang         Show language switch commands
 
 Common commands:
+  clear             Clear the current screen
+  cls               Alias of clear
   jobs list         List data jobs
   datasources list  List data sources
   workers list      List workers
