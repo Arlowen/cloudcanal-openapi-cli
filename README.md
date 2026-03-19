@@ -6,24 +6,7 @@
 
 ## 快速开始
 
-要求：
-
-- 日常使用：`curl`、`tar`
-- 本地源码开发：Go 1.25+
-
-构建并测试：
-
-```bash
-./scripts/all_build.sh
-```
-
-源码方式安装到命令行：
-
-```bash
-./scripts/install.sh
-```
-
-安装脚本会同时安装 zsh / bash 的 TAB 补全文件。
+日常使用只需要 `curl` 和 `tar`。
 
 一键安装：
 
@@ -33,19 +16,8 @@ curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main
 
 这个一键安装脚本会从 GitHub Releases 下载预编译二进制，不需要本机安装 Go。
 下载后会自动校验 release 中的 `checksums.txt`，再执行安装。
+安装脚本会同时安装 zsh / bash 的 TAB 补全文件。
 默认会把二进制安装到 `~/.local/share/cloudcanal-openapi-cli/bin/cloudcanal`。
-
-一键卸载：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main/scripts/bootstrap_uninstall.sh | bash
-```
-
-卸载：
-
-```bash
-./scripts/uninstall.sh
-```
 
 ## 使用方式
 
@@ -74,7 +46,35 @@ cloudcanal jobs list --type SYNC --output json
 }
 ```
 
+## 卸载
+
+一键卸载：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main/scripts/bootstrap_uninstall.sh | bash
+```
+
 ## 开发
+
+本地源码开发要求 Go 1.25+。
+
+构建并测试：
+
+```bash
+./scripts/all_build.sh
+```
+
+源码方式安装到命令行：
+
+```bash
+./scripts/install.sh
+```
+
+源码方式卸载：
+
+```bash
+./scripts/uninstall.sh
+```
 
 发布：
 
