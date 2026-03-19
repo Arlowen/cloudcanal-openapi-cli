@@ -21,7 +21,7 @@ cloudcanal jobs list --type SYNC --output json
 如果还没有安装到系统命令，也可以直接执行本地二进制：
 
 ```bash
-./bin/cloudcanal jobs list
+~/.cloudcanal-cli/bin/cloudcanal jobs list
 ```
 
 一键安装：
@@ -35,7 +35,8 @@ curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main
 - 当前一键安装会从 GitHub Releases 下载预编译二进制
 - 下载后会自动校验 release 里的 `checksums.txt`
 - 不需要本机安装 `Go`
-- 默认会把二进制安装到 `~/.local/share/cloudcanal-openapi-cli/bin/cloudcanal`
+- 默认会把二进制安装到 `~/.cloudcanal-cli/bin/cloudcanal`
+- 补全文件会安装到 `~/.cloudcanal-cli/completions`
 - 之后会自动完成命令、PATH 和补全安装
 
 一键卸载：
@@ -119,6 +120,8 @@ curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main
 cloudcanal completion zsh
 cloudcanal completion bash
 ```
+
+安装后的补全文件默认放在 `~/.cloudcanal-cli/completions`。
 
 `exit` / `quit`
 
