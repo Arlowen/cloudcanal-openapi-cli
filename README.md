@@ -1,46 +1,29 @@
 # cloudcanal-openapi-cli
 
-CloudCanal OpenAPI 的交互式 CLI，Go 实现。
+基于 Go 实现的 CloudCanal OpenAPI CLI，支持交互式使用，也支持单次命令执行。
 
-当前 MVP 支持：
+当前已支持的 `datajob` 操作：
 
-- 首次启动时录入并保存 `apiHost`、`ak`、`sk`
-- 查看任务列表
-- 查看任务详情
-- 启动任务
-- 停止任务
-- 删除任务
-- 重放任务
+- `list`
+- `show`
+- `start`
+- `stop`
+- `delete`
+- `replay`
 
-## 要求
+## 快速开始
+
+要求：
 
 - Go 1.25+
 
-## 构建
-
-```bash
-go build -o bin/cloudcanal ./cmd/cloudcanal
-```
-
-或者：
-
-```bash
-make build
-```
-
-或者一键清理并测试、编译：
+构建并测试：
 
 ```bash
 ./scripts/all_build.sh
 ```
 
-如果想看完整测试和构建输出：
-
-```bash
-VERBOSE=1 ./scripts/all_build.sh
-```
-
-安装到命令行环境：
+安装到命令行：
 
 ```bash
 ./scripts/install.sh
@@ -52,32 +35,37 @@ VERBOSE=1 ./scripts/all_build.sh
 ./scripts/uninstall.sh
 ```
 
-## 运行
+如果想看完整构建输出：
 
 ```bash
-./bin/cloudcanal
+VERBOSE=1 ./scripts/all_build.sh
 ```
 
-也支持直接执行单条命令：
+## 使用方式
+
+交互模式：
+
+```bash
+cloudcanal
+```
+
+单次命令模式：
+
+```bash
+cloudcanal jobs list
+cloudcanal jobs show 123
+cloudcanal jobs replay 123 --auto-start
+```
+
+如果还没有执行安装脚本，也可以直接运行二进制：
 
 ```bash
 ./bin/cloudcanal jobs list
-./bin/cloudcanal jobs show 123
-./bin/cloudcanal jobs replay 123 --auto-start
 ```
 
-第一次启动如果不存在配置文件，会进入初始化向导：
+## 初始化配置
 
-```text
-CloudCanal CLI initialization
-Type exit at any prompt to cancel.
-apiHost must be a full URL, for example: https://cc.example.com
-apiHost:
-ak:
-sk:
-```
-
-配置文件保存到：
+第一次启动会进入初始化向导，配置文件保存到：
 
 ```text
 ~/.cloudcanal/config.json
@@ -93,11 +81,12 @@ sk:
 }
 ```
 
-`apiBaseUrl` 必须是完整 URL，包含 `http://` 或 `https://`。
+说明：
+
+- `apiBaseUrl` 必须是完整 URL，包含 `http://` 或 `https://`
+- `secretKey` 不会在 `config show` 中明文展示
 
 ## 命令
-
-进入 CLI 后可用命令：
 
 ```text
 jobs list
@@ -113,13 +102,15 @@ exit
 quit
 ```
 
-## 测试
+## 开发
+
+只编译：
 
 ```bash
-go test ./...
+make build
 ```
 
-或者：
+只测试：
 
 ```bash
 make test
