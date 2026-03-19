@@ -82,6 +82,7 @@ cloudcanal jobs list --type SYNC --output json
 ## 文档入口
 
 - 安装、初始化、命令参数、示例：[docs/cloudcanal-cli-usage.md](docs/cloudcanal-cli-usage.md)
+- 版本变更记录：[CHANGELOG.md](CHANGELOG.md)
 - 机器可读输出：在查询命令后追加 `--output json`
 - 补全脚本：`cloudcanal completion zsh` / `cloudcanal completion bash`
 
