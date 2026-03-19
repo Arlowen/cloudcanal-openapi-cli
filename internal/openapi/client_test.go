@@ -1,0 +1,110 @@
+package openapi
+
+import (
+	"cloudcanal-openapi-cli/internal/config"
+	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+)
+
+func TestClientPostsJSONWithSignedParams(t *testing.T) {
+	var gotMethod string
+	var gotBody map[string]any
+	var gotQuery map[string]string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotQuery = map[string]string{
+			"AccessKeyId":     r.URL.Query().Get("AccessKeyId"),
+			"SignatureMethod": r.URL.Query().Get("SignatureMethod"),
+			"SignatureNonce":  r.URL.Query().Get("SignatureNonce"),
+			"Signature":       r.URL.Query().Get("Signature"),
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("Decode() error = %v", err)
+		}
+		_, _ = w.Write([]byte(`{"code":"1","msg":"ok"}`))
+	}))
+	defer server.Close()
+
+	client, err := NewClient(config.AppConfig{
+		APIBaseURL: server.URL,
+		AccessKey:  "test-ak",
+		SecretKey:  "test-sk",
+	})
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	var response map[string]string
+	if err := client.PostJSON("/cloudcanal/console/api/v1/openapi/datajob/start", map[string]any{"jobId": 123}, &response); err != nil {
+		t.Fatalf("PostJSON() error = %v", err)
+	}
+
+	if gotMethod != http.MethodPost {
+		t.Fatalf("method = %q, want POST", gotMethod)
+	}
+	if gotBody["jobId"] != float64(123) {
+		t.Fatalf("body jobId = %#v, want 123", gotBody["jobId"])
+	}
+	if gotQuery["AccessKeyId"] != "test-ak" || gotQuery["SignatureMethod"] != "HmacSHA1" {
+		t.Fatalf("unexpected query params: %#v", gotQuery)
+	}
+	if gotQuery["SignatureNonce"] == "" || gotQuery["Signature"] == "" {
+		t.Fatalf("missing signature query params: %#v", gotQuery)
+	}
+}
+
+func TestClientReturnsServerErrorForNon2xx(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client, err := NewClient(config.AppConfig{
+		APIBaseURL: server.URL,
+		AccessKey:  "test-ak",
+		SecretKey:  "test-sk",
+	})
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	err = client.PostJSON("/cloudcanal/console/api/v1/openapi/datajob/list", map[string]any{}, &map[string]any{})
+	if err == nil {
+		t.Fatal("PostJSON() error = nil, want non-nil")
+	}
+	serverErr, ok := err.(*ServerError)
+	if !ok {
+		t.Fatalf("error type = %T, want *ServerError", err)
+	}
+	if serverErr.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", serverErr.StatusCode, http.StatusInternalServerError)
+	}
+}
+
+func TestClientReturnsErrorWhenConnectionFails(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error = %v", err)
+	}
+	addr := listener.Addr().String()
+	_ = listener.Close()
+
+	httpClient := &http.Client{Timeout: 200 * time.Millisecond}
+	client, err := NewClientWithHTTP(config.AppConfig{
+		APIBaseURL: "http://" + addr,
+		AccessKey:  "test-ak",
+		SecretKey:  "test-sk",
+	}, httpClient)
+	if err != nil {
+		t.Fatalf("NewClientWithHTTP() error = %v", err)
+	}
+
+	if err := client.PostJSON("/cloudcanal/console/api/v1/openapi/datajob/list", map[string]any{}, &map[string]any{}); err == nil {
+		t.Fatal("PostJSON() error = nil, want non-nil")
+	}
+}

@@ -1,0 +1,4 @@
+/bin/cloudcanal
+/target/
+/coverage.out
+/.DS_Store
