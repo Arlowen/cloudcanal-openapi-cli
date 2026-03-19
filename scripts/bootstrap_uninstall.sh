@@ -36,15 +36,6 @@ PATH_MARK_END="# <<< cloudcanal-openapi-cli <<<"
 COMPLETION_MARK_START="# >>> cloudcanal-openapi-cli completion >>>"
 COMPLETION_MARK_END="# <<< cloudcanal-openapi-cli completion <<<"
 
-LEGACY_INSTALL_ROOT="${LEGACY_INSTALL_ROOT:-$HOME/.local/share/$REPO_NAME}"
-LEGACY_INSTALL_BIN_DIR="${LEGACY_INSTALL_BIN_DIR:-$HOME/bin}"
-LEGACY_INSTALL_PATH="$LEGACY_INSTALL_BIN_DIR/$APP_NAME"
-LEGACY_INSTALL_BIN_PATH="$LEGACY_INSTALL_ROOT/bin/$APP_NAME"
-LEGACY_INSTALL_ZSH_COMPLETION_DIR="${LEGACY_INSTALL_ZSH_COMPLETION_DIR:-$HOME/.zsh/completions}"
-LEGACY_INSTALL_BASH_COMPLETION_DIR="${LEGACY_INSTALL_BASH_COMPLETION_DIR:-$HOME/.local/share/bash-completion/completions}"
-LEGACY_ZSH_COMPLETION_PATH="$LEGACY_INSTALL_ZSH_COMPLETION_DIR/_$APP_NAME"
-LEGACY_BASH_COMPLETION_PATH="$LEGACY_INSTALL_BASH_COMPLETION_DIR/$APP_NAME"
-
 remove_rc_block() {
   local start_mark="$1"
   local end_mark="$2"
@@ -108,44 +99,11 @@ remove_completion_files() {
   fi
 }
 
-remove_legacy_install() {
-  if [[ -L "$LEGACY_INSTALL_PATH" ]]; then
-    local target
-    target="$(readlink "$LEGACY_INSTALL_PATH")"
-    if [[ "$target" == "$LEGACY_INSTALL_BIN_PATH" ]]; then
-      rm -f "$LEGACY_INSTALL_PATH"
-      log_success "Removed legacy managed symlink $LEGACY_INSTALL_PATH"
-    else
-      log_info "Skipped legacy command link $LEGACY_INSTALL_PATH because it is not managed by the release installer"
-    fi
-  elif [[ -e "$LEGACY_INSTALL_PATH" ]]; then
-    log_info "Skipped legacy command link $LEGACY_INSTALL_PATH because it is not a managed symlink"
-  else
-    log_info "No legacy installed command found at $LEGACY_INSTALL_PATH"
-  fi
-
-  if [[ -f "$LEGACY_ZSH_COMPLETION_PATH" ]]; then
-    rm -f "$LEGACY_ZSH_COMPLETION_PATH"
-    log_success "Removed legacy zsh completion $LEGACY_ZSH_COMPLETION_PATH"
-  fi
-
-  if [[ -f "$LEGACY_BASH_COMPLETION_PATH" ]]; then
-    rm -f "$LEGACY_BASH_COMPLETION_PATH"
-    log_success "Removed legacy bash completion $LEGACY_BASH_COMPLETION_PATH"
-  fi
-
-  if [[ -d "$LEGACY_INSTALL_ROOT" ]]; then
-    rm -rf "$LEGACY_INSTALL_ROOT"
-    log_success "Removed legacy install root $LEGACY_INSTALL_ROOT"
-  fi
-}
-
 log_info "CloudCanal OpenAPI CLI release uninstall started"
 remove_binary
 remove_rc_block "$PATH_MARK_START" "$PATH_MARK_END" "PATH configuration"
 remove_completion_files
 remove_rc_block "$COMPLETION_MARK_START" "$COMPLETION_MARK_END" "shell completion configuration"
 prune_install_dirs
-remove_legacy_install
 log_info "Open a new shell or source $INSTALL_SHELL_RC to refresh PATH"
 log_success "Release uninstall completed"

@@ -111,17 +111,14 @@ func (c AppConfig) HTTPReadRetryBackoffMillisValue() int {
 }
 
 type Service struct {
-	path           string
-	defaultManaged bool
+	path string
 }
 
 func NewService(path string) *Service {
-	defaultManaged := false
 	if strings.TrimSpace(path) == "" {
 		path = DefaultPath()
-		defaultManaged = true
 	}
-	return &Service{path: path, defaultManaged: defaultManaged}
+	return &Service{path: path}
 }
 
 func DefaultPath() string {
@@ -132,39 +129,17 @@ func DefaultPath() string {
 	return filepath.Join(home, ".cloudcanal-cli", "config.json")
 }
 
-func LegacyDefaultPath() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ".cloudcanal/config.json"
-	}
-	return filepath.Join(home, ".cloudcanal", "config.json")
-}
-
 func (s *Service) Path() string {
 	return s.path
 }
 
 func (s *Service) Exists() bool {
 	_, err := os.Stat(s.path)
-	if err == nil {
-		return true
-	}
-	if s.defaultManaged {
-		_, legacyErr := os.Stat(LegacyDefaultPath())
-		return legacyErr == nil
-	}
-	return false
+	return err == nil
 }
 
 func (s *Service) Load() (AppConfig, error) {
-	cfg, err := s.loadFromPath(s.path)
-	if err == nil {
-		return cfg, nil
-	}
-	if s.defaultManaged && errors.Is(err, os.ErrNotExist) {
-		return s.loadFromLegacyPath()
-	}
-	return AppConfig{}, err
+	return s.loadFromPath(s.path)
 }
 
 func (s *Service) loadFromPath(path string) (AppConfig, error) {
@@ -179,19 +154,6 @@ func (s *Service) loadFromPath(path string) (AppConfig, error) {
 	cfg = cfg.WithDefaults()
 	if err := cfg.Validate(); err != nil {
 		return AppConfig{}, err
-	}
-	return cfg, nil
-}
-
-func (s *Service) loadFromLegacyPath() (AppConfig, error) {
-	legacyPath := LegacyDefaultPath()
-	cfg, err := s.loadFromPath(legacyPath)
-	if err != nil {
-		return AppConfig{}, err
-	}
-	if err := s.Save(cfg); err == nil {
-		_ = os.Remove(legacyPath)
-		_ = os.Remove(filepath.Dir(legacyPath))
 	}
 	return cfg, nil
 }

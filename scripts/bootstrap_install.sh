@@ -44,15 +44,6 @@ ARCHIVE_PATH="$TMP_DIR/$APP_NAME.tar.gz"
 CHECKSUMS_PATH="$TMP_DIR/checksums.txt"
 EXTRACT_DIR="$TMP_DIR/extract"
 
-LEGACY_INSTALL_ROOT="${LEGACY_INSTALL_ROOT:-$HOME/.local/share/$REPO_NAME}"
-LEGACY_INSTALL_BIN_DIR="${LEGACY_INSTALL_BIN_DIR:-$HOME/bin}"
-LEGACY_INSTALL_PATH="$LEGACY_INSTALL_BIN_DIR/$APP_NAME"
-LEGACY_INSTALL_BIN_PATH="$LEGACY_INSTALL_ROOT/bin/$APP_NAME"
-LEGACY_INSTALL_ZSH_COMPLETION_DIR="${LEGACY_INSTALL_ZSH_COMPLETION_DIR:-$HOME/.zsh/completions}"
-LEGACY_INSTALL_BASH_COMPLETION_DIR="${LEGACY_INSTALL_BASH_COMPLETION_DIR:-$HOME/.local/share/bash-completion/completions}"
-LEGACY_ZSH_COMPLETION_PATH="$LEGACY_INSTALL_ZSH_COMPLETION_DIR/_$APP_NAME"
-LEGACY_BASH_COMPLETION_PATH="$LEGACY_INSTALL_BASH_COMPLETION_DIR/$APP_NAME"
-
 cleanup() {
   rm -rf "$TMP_DIR"
 }
@@ -205,32 +196,6 @@ strip_rc_block() {
   mv "$tmp_file" "$INSTALL_SHELL_RC"
 }
 
-cleanup_legacy_install() {
-  if [[ -L "$LEGACY_INSTALL_PATH" ]]; then
-    local target
-    target="$(readlink "$LEGACY_INSTALL_PATH")"
-    if [[ "$target" == "$LEGACY_INSTALL_BIN_PATH" ]]; then
-      rm -f "$LEGACY_INSTALL_PATH"
-      log_info "Removed legacy managed symlink $LEGACY_INSTALL_PATH"
-    fi
-  fi
-
-  if [[ -f "$LEGACY_ZSH_COMPLETION_PATH" ]]; then
-    rm -f "$LEGACY_ZSH_COMPLETION_PATH"
-    log_info "Removed legacy zsh completion $LEGACY_ZSH_COMPLETION_PATH"
-  fi
-
-  if [[ -f "$LEGACY_BASH_COMPLETION_PATH" ]]; then
-    rm -f "$LEGACY_BASH_COMPLETION_PATH"
-    log_info "Removed legacy bash completion $LEGACY_BASH_COMPLETION_PATH"
-  fi
-
-  if [[ -d "$LEGACY_INSTALL_ROOT" ]]; then
-    rm -rf "$LEGACY_INSTALL_ROOT"
-    log_info "Removed legacy install root $LEGACY_INSTALL_ROOT"
-  fi
-}
-
 install_binary() {
   mkdir -p "$INSTALL_BIN_DIR" "$EXTRACT_DIR"
 
@@ -306,7 +271,6 @@ require_command tar
 detect_platform
 install_binary
 ensure_completion_files
-cleanup_legacy_install
 ensure_path_block
 ensure_completion_block
 

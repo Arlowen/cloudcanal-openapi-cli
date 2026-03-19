@@ -29,15 +29,6 @@ PATH_MARK_END="# <<< cloudcanal-openapi-cli <<<"
 COMPLETION_MARK_START="# >>> cloudcanal-openapi-cli completion >>>"
 COMPLETION_MARK_END="# <<< cloudcanal-openapi-cli completion <<<"
 
-LEGACY_RELEASE_ROOT="${LEGACY_RELEASE_ROOT:-$HOME/.local/share/cloudcanal-openapi-cli}"
-LEGACY_INSTALL_BIN_DIR="${LEGACY_INSTALL_BIN_DIR:-$HOME/bin}"
-LEGACY_INSTALL_PATH="$LEGACY_INSTALL_BIN_DIR/$APP_NAME"
-LEGACY_RELEASE_BIN_PATH="$LEGACY_RELEASE_ROOT/bin/$APP_NAME"
-LEGACY_INSTALL_ZSH_COMPLETION_DIR="${LEGACY_INSTALL_ZSH_COMPLETION_DIR:-$HOME/.zsh/completions}"
-LEGACY_INSTALL_BASH_COMPLETION_DIR="${LEGACY_INSTALL_BASH_COMPLETION_DIR:-$HOME/.local/share/bash-completion/completions}"
-LEGACY_ZSH_COMPLETION_PATH="$LEGACY_INSTALL_ZSH_COMPLETION_DIR/_$APP_NAME"
-LEGACY_BASH_COMPLETION_PATH="$LEGACY_INSTALL_BASH_COMPLETION_DIR/$APP_NAME"
-
 ensure_binary() {
   if [[ -x "$BIN_PATH" ]]; then
     log_success "Found binary at $BIN_PATH"
@@ -63,32 +54,6 @@ strip_rc_block() {
   fi
 
   mv "$tmp_file" "$INSTALL_SHELL_RC"
-}
-
-cleanup_legacy_install() {
-  if [[ -L "$LEGACY_INSTALL_PATH" ]]; then
-    local target
-    target="$(readlink "$LEGACY_INSTALL_PATH")"
-    if [[ "$target" == "$BIN_PATH" || "$target" == "$LEGACY_RELEASE_BIN_PATH" ]]; then
-      rm -f "$LEGACY_INSTALL_PATH"
-      log_info "Removed legacy managed symlink $LEGACY_INSTALL_PATH"
-    fi
-  fi
-
-  if [[ -f "$LEGACY_ZSH_COMPLETION_PATH" ]]; then
-    rm -f "$LEGACY_ZSH_COMPLETION_PATH"
-    log_info "Removed legacy zsh completion $LEGACY_ZSH_COMPLETION_PATH"
-  fi
-
-  if [[ -f "$LEGACY_BASH_COMPLETION_PATH" ]]; then
-    rm -f "$LEGACY_BASH_COMPLETION_PATH"
-    log_info "Removed legacy bash completion $LEGACY_BASH_COMPLETION_PATH"
-  fi
-
-  if [[ -d "$LEGACY_RELEASE_ROOT" ]]; then
-    rm -rf "$LEGACY_RELEASE_ROOT"
-    log_info "Removed legacy release install root $LEGACY_RELEASE_ROOT"
-  fi
 }
 
 ensure_path_block() {
@@ -142,7 +107,6 @@ mkdir -p "$INSTALL_BIN_DIR"
 ln -sfn "$BIN_PATH" "$INSTALL_PATH"
 log_success "Installed $INSTALL_PATH"
 ensure_completion_files
-cleanup_legacy_install
 ensure_path_block
 ensure_completion_block
 
