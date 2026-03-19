@@ -1,54 +1,96 @@
 # cloudcanal-openapi-cli
 
-基于 Go 实现的 CloudCanal OpenAPI CLI，支持交互式使用，也支持单次命令执行。
+CloudCanal OpenAPI 的命令行工具，支持：
 
-详细使用说明见 [docs/cloudcanal-cli-usage.md](docs/cloudcanal-cli-usage.md)。
+- 交互式命令行
+- 单次命令执行
+- `--output json` 机器可读输出
+- zsh / bash TAB 补全
+
+完整命令说明见 [docs/cloudcanal-cli-usage.md](docs/cloudcanal-cli-usage.md)。
 
 ## 快速开始
 
-日常使用只需要 `curl` 和 `tar`。
-
-一键安装：
+安装：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main/scripts/bootstrap_install.sh | bash
 ```
 
-这个一键安装脚本会从 GitHub Releases 下载预编译二进制，不需要本机安装 Go。
-下载后会自动校验 release 中的 `checksums.txt`，再执行安装。
-安装脚本会同时安装 zsh / bash 的 TAB 补全文件。
-默认会把二进制安装到 `~/.local/share/cloudcanal-openapi-cli/bin/cloudcanal`。
+说明：
 
-## 使用方式
+- 安装脚本会从 GitHub Releases 下载预编译二进制
+- 下载后会自动校验 `checksums.txt`
+- 不需要本机安装 Go
+- 会自动安装命令、PATH 和 zsh / bash 补全
 
-详细命令、参数和示例请看上面的使用说明文档。
-如需机器可读输出，可以在命令后追加 `--output json`，例如：
+安装完成后，先直接运行：
+
+```bash
+cloudcanal
+```
+
+首次启动会进入初始化向导，配置完成后就可以开始用。
+
+## 常用用法
+
+交互模式：
+
+```bash
+cloudcanal
+```
+
+单次命令：
+
+```bash
+cloudcanal jobs list
+cloudcanal jobs show 123
+cloudcanal datasources list --type MYSQL
+cloudcanal workers list --cluster-id 2
+```
+
+JSON 输出：
 
 ```bash
 cloudcanal jobs list --type SYNC --output json
 ```
 
-## 初始化配置
+## 配置
 
-第一次启动会进入初始化向导，配置文件保存到 `~/.cloudcanal/config.json`。配置格式、字段含义和命令参数说明见详细文档。
+配置文件默认保存在：
 
-高级网络选项也可以直接写进配置文件：
+```text
+~/.cloudcanal/config.json
+```
+
+最小配置示例：
 
 ```json
 {
   "apiBaseUrl": "https://cc.example.com",
   "accessKey": "your-ak",
   "secretKey": "your-sk",
-  "language": "en",
+  "language": "en"
+}
+```
+
+如果你需要调整网络行为，也可以追加这些可选项：
+
+```json
+{
   "httpTimeoutSeconds": 15,
   "httpReadMaxRetries": 2,
   "httpReadRetryBackoffMillis": 300
 }
 ```
 
-## 卸载
+## 文档入口
 
-一键卸载：
+- 安装、初始化、命令参数、示例：[docs/cloudcanal-cli-usage.md](docs/cloudcanal-cli-usage.md)
+- 机器可读输出：在查询命令后追加 `--output json`
+- 补全脚本：`cloudcanal completion zsh` / `cloudcanal completion bash`
+
+## 卸载
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main/scripts/bootstrap_uninstall.sh | bash
@@ -56,40 +98,22 @@ curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main
 
 ## 开发
 
-本地源码开发要求 Go 1.25+。
+要求：
 
-构建并测试：
+- Go 1.25+
+
+常用命令：
 
 ```bash
 ./scripts/all_build.sh
-```
-
-源码方式安装到命令行：
-
-```bash
+make build
+make test
 ./scripts/install.sh
-```
-
-源码方式卸载：
-
-```bash
 ./scripts/uninstall.sh
 ```
 
 发布：
 
 - 推送 tag，例如 `v0.1.0`
-- GitHub Actions 会自动构建并发布 `darwin/linux + amd64/arm64` 的 release 资产
-- Release 会同时生成 `checksums.txt`，供一键安装脚本做完整性校验
-
-只编译：
-
-```bash
-make build
-```
-
-只测试：
-
-```bash
-make test
-```
+- GitHub Actions 会自动构建并发布 release 资产
+- Release 会同时生成 `checksums.txt`
