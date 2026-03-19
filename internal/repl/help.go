@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const detailedGuideURL = "https://github.com/Arlowen/cloudcanal-openapi-cli/blob/main/docs/cloudcanal-cli-usage.md"
+
 func (s *Shell) printHelp(args []string) {
 	s.io.Println(s.renderHelp(args))
 }
@@ -79,7 +81,7 @@ CloudCanal CLI 帮助
   exit              退出交互模式
 
 详细使用文档：
-  docs/cloudcanal-cli-usage.md
+  ` + detailedGuideURL + `
 `)
 	}
 
@@ -114,7 +116,7 @@ REPL tips:
   exit              Leave interactive mode
 
 Detailed guide:
-  docs/cloudcanal-cli-usage.md
+  ` + detailedGuideURL + `
 `)
 }
 
