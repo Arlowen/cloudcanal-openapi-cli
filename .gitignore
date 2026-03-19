@@ -1,5 +1,8 @@
 # Build outputs
 /bin/
 
+# Local IDE files
+.idea/
+
 # Local macOS metadata
 .DS_Store
