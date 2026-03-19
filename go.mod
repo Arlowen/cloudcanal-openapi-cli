@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/mattn/go-runewidth v0.0.16
+	github.com/peterh/liner v1.2.2
 	golang.org/x/term v0.36.0
 )
 

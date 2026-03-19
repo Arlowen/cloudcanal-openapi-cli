@@ -31,6 +31,8 @@ func (s *Shell) printHelp(args []string) {
 		s.io.Println(s.helpConfig())
 	case "lang", "language":
 		s.io.Println(s.helpLanguage())
+	case "completion":
+		s.io.Println(s.helpCompletion())
 	default:
 		s.io.Println(s.helpOverview())
 	}
@@ -50,10 +52,12 @@ CloudCanal CLI 帮助
   help job-config   查看数据任务规格命令说明
   help config       查看配置命令说明
   help lang         查看语言切换命令说明
+  help completion   查看 TAB 补全命令说明
 
 常用命令：
   clear             清空当前终端屏幕
   cls               clear 的别名
+  completion zsh    输出 zsh 补全脚本
   jobs list         列出数据任务
   datasources list  列出数据源
   workers list      列出机器
@@ -78,10 +82,12 @@ Help topics:
   help job-config   Show data job spec commands
   help config       Show configuration commands
   help lang         Show language switch commands
+  help completion   Show TAB completion commands
 
 Common commands:
   clear             Clear the current screen
   cls               Alias of clear
+  completion zsh    Print the zsh completion script
   jobs list         List data jobs
   datasources list  List data sources
   workers list      List workers
@@ -360,4 +366,36 @@ lang set <en|zh>
   en  English
   zh  Chinese
 `), i18n.T("lang.usage"))
+}
+
+func (s *Shell) helpCompletion() string {
+	if s.isChinese() {
+		return strings.TrimSpace(`
+completion 命令
+
+completion <zsh|bash> [commandName]
+  输出 shell TAB 补全脚本。
+  zsh   生成 zsh 补全脚本
+  bash  生成 bash 补全脚本
+  commandName 可选，用于指定安装后的命令名。
+
+说明：
+  REPL 模式下如果终端支持行编辑，TAB 会自动补全命令和参数。
+  安装脚本会默认安装 zsh 和 bash 补全文件。
+`)
+	}
+
+	return strings.TrimSpace(`
+completion commands
+
+completion <zsh|bash> [commandName]
+  Print a shell TAB completion script.
+  zsh   Generate the zsh completion script.
+  bash  Generate the bash completion script.
+  commandName is optional and overrides the installed command name.
+
+Notes:
+  In REPL mode, TAB completes commands and options when the terminal supports line editing.
+  The install script installs zsh and bash completion files by default.
+`)
 }

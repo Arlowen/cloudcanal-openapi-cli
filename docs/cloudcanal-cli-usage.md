@@ -84,6 +84,15 @@ cloudcanal datasources list --type MYSQL
 
 切换 CLI 文案语言，并持久化到配置文件。
 
+`completion <zsh|bash> [commandName]`
+
+输出 shell TAB 补全脚本。安装脚本默认会安装 zsh 和 bash 的补全文件；如果你想手动安装，也可以直接执行：
+
+```bash
+cloudcanal completion zsh
+cloudcanal completion bash
+```
+
 `exit` / `quit`
 
 退出交互模式。
@@ -228,6 +237,7 @@ cloudcanal job-config specs --type SYNC --initial-sync=true
 ## 使用建议
 
 - 带空格的参数值请使用引号包裹，例如 `--desc "nightly sync"`
+- 交互模式下如果终端支持行编辑，可以直接使用 `TAB` 补全命令、子命令和常见参数
 - 可以先执行 `cloudcanal help` 查看帮助主题，再执行 `cloudcanal help jobs` 这类子帮助查看参数含义
 - 如果想切换中文或英文文案，可执行 `cloudcanal lang set zh` 或 `cloudcanal lang set en`
 - 如果命令执行失败，优先检查 `apiBaseUrl`、`accessKey`、`secretKey` 是否正确

@@ -18,7 +18,11 @@ type Shell struct {
 
 func NewShell(io console.IO, runtime app.RuntimeContext) *Shell {
 	_ = i18n.SetLanguage(runtime.Config().NormalizedLanguage())
-	return &Shell{io: io, runtime: runtime}
+	shell := &Shell{io: io, runtime: runtime}
+	if completable, ok := io.(console.TabCompletable); ok {
+		completable.SetCompleter(shell.completeLine)
+	}
+	return shell
 }
 
 func (s *Shell) ExecuteArgs(args []string) error {
@@ -74,6 +78,11 @@ func (s *Shell) handleTokens(tokens []string, commandLine string) error {
 		return nil
 	case "clear", "cls":
 		s.io.ClearScreen()
+		return nil
+	case "completion":
+		return s.handleCompletion(tokens)
+	case "__complete":
+		s.printHiddenCompletions(tokens[1:])
 		return nil
 	case "jobs":
 		return s.handleJobs(tokens)

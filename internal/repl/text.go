@@ -98,6 +98,13 @@ func (s *Shell) usageJobConfig() string {
 	return "Usage: job-config specs [--type TYPE] [--initial-sync=true|false] [--short-term-sync=true|false]"
 }
 
+func (s *Shell) usageCompletion() string {
+	if s.isChinese() {
+		return "用法：completion <zsh|bash> [commandName]"
+	}
+	return "Usage: completion <zsh|bash> [commandName]"
+}
+
 func (s *Shell) actionMessage(kind string, id int64) string {
 	if s.isChinese() {
 		switch kind {

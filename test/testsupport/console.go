@@ -1,14 +1,16 @@
 package testsupport
 
 import (
+	"cloudcanal-openapi-cli/internal/console"
 	"io"
 	"strings"
 )
 
 type TestConsole struct {
-	inputs []string
-	output strings.Builder
-	index  int
+	inputs    []string
+	output    strings.Builder
+	index     int
+	completer console.Completer
 }
 
 func NewTestConsole(inputs ...string) *TestConsole {
@@ -43,6 +45,17 @@ func (t *TestConsole) Println(text string) {
 
 func (t *TestConsole) ClearScreen() {
 	t.output.WriteString("\033[H\033[2J")
+}
+
+func (t *TestConsole) SetCompleter(completer console.Completer) {
+	t.completer = completer
+}
+
+func (t *TestConsole) Complete(line string) []string {
+	if t.completer == nil {
+		return nil
+	}
+	return t.completer(line)
 }
 
 func (t *TestConsole) Output() string {

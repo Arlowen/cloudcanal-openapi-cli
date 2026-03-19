@@ -22,6 +22,8 @@
 ./scripts/install.sh
 ```
 
+安装脚本会同时安装 zsh / bash 的 TAB 补全文件。
+
 卸载：
 
 ```bash

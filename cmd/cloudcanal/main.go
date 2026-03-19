@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"cloudcanal-openapi-cli/internal/app"
 	"cloudcanal-openapi-cli/internal/config"
@@ -12,7 +14,14 @@ import (
 )
 
 func main() {
+	if handled, exitCode := handleEarlyCommands(os.Args[1:]); handled {
+		os.Exit(exitCode)
+	}
+
 	io := console.NewStdIO(os.Stdin, os.Stdout)
+	if closer, ok := any(io).(interface{ Close() error }); ok {
+		defer func() { _ = closer.Close() }()
+	}
 	runtime := app.NewRuntime(config.NewService(""))
 	ok, err := runtime.InitializeIfNeeded(io)
 	if err != nil {
@@ -35,5 +44,29 @@ func main() {
 	if err := shell.Run(); err != nil {
 		io.Println(i18n.T("common.fatalErrorPrefix", util.SummarizeError(err)))
 		os.Exit(1)
+	}
+}
+
+func handleEarlyCommands(args []string) (bool, int) {
+	if len(args) == 0 {
+		return false, 0
+	}
+
+	switch strings.ToLower(args[0]) {
+	case "completion":
+		script, err := repl.RenderCompletionScript(args[1:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return true, 1
+		}
+		fmt.Print(script)
+		return true, 0
+	case "__complete":
+		for _, candidate := range repl.CompletionCandidates(args[1:], false) {
+			fmt.Println(candidate)
+		}
+		return true, 0
+	default:
+		return false, 0
 	}
 }

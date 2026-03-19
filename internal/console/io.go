@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/peterh/liner"
 	"golang.org/x/term"
 )
 
@@ -16,22 +17,49 @@ type IO interface {
 	ClearScreen()
 }
 
+type Completer func(line string) []string
+
+type TabCompletable interface {
+	SetCompleter(Completer)
+}
+
 type StdIO struct {
-	reader    *bufio.Reader
-	writer    io.Writer
-	inputFile *os.File
+	reader     *bufio.Reader
+	writer     io.Writer
+	inputFile  *os.File
+	outputFile *os.File
+	liner      *liner.State
 }
 
 func NewStdIO(reader io.Reader, writer io.Writer) *StdIO {
 	inputFile, _ := reader.(*os.File)
+	outputFile, _ := writer.(*os.File)
+	var lineEditor *liner.State
+	if inputFile != nil && outputFile != nil && term.IsTerminal(int(inputFile.Fd())) && term.IsTerminal(int(outputFile.Fd())) {
+		lineEditor = liner.NewLiner()
+		lineEditor.SetCtrlCAborts(true)
+	}
 	return &StdIO{
-		reader:    bufio.NewReader(reader),
-		writer:    writer,
-		inputFile: inputFile,
+		reader:     bufio.NewReader(reader),
+		writer:     writer,
+		inputFile:  inputFile,
+		outputFile: outputFile,
+		liner:      lineEditor,
 	}
 }
 
 func (s *StdIO) ReadLine(prompt string) (string, error) {
+	if s.liner != nil {
+		line, err := s.liner.Prompt(prompt)
+		if err != nil {
+			return "", err
+		}
+		if trimmed := trimLine(line); trimmed != "" {
+			s.liner.AppendHistory(trimmed)
+		}
+		return trimLine(line), nil
+	}
+
 	if _, err := fmt.Fprint(s.writer, prompt); err != nil {
 		return "", err
 	}
@@ -46,6 +74,14 @@ func (s *StdIO) ReadLine(prompt string) (string, error) {
 }
 
 func (s *StdIO) ReadSecret(prompt string) (string, error) {
+	if s.liner != nil {
+		line, err := s.liner.PasswordPrompt(prompt)
+		if err != nil {
+			return "", err
+		}
+		return trimLine(line), nil
+	}
+
 	if s.inputFile == nil || !term.IsTerminal(int(s.inputFile.Fd())) {
 		return s.ReadLine(prompt)
 	}
@@ -69,6 +105,26 @@ func (s *StdIO) Println(text string) {
 
 func (s *StdIO) ClearScreen() {
 	_, _ = fmt.Fprint(s.writer, "\033[H\033[2J")
+}
+
+func (s *StdIO) SetCompleter(completer Completer) {
+	if s.liner == nil {
+		return
+	}
+	if completer == nil {
+		s.liner.SetCompleter(nil)
+		return
+	}
+	s.liner.SetCompleter(func(line string) []string {
+		return completer(line)
+	})
+}
+
+func (s *StdIO) Close() error {
+	if s.liner == nil {
+		return nil
+	}
+	return s.liner.Close()
 }
 
 func trimLine(line string) string {
