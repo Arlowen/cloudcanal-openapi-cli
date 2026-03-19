@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cloudcanal-openapi-cli/internal/i18n"
 	"encoding/json"
 	"errors"
 	"net/url"
@@ -13,28 +14,33 @@ type AppConfig struct {
 	APIBaseURL string `json:"apiBaseUrl"`
 	AccessKey  string `json:"accessKey"`
 	SecretKey  string `json:"secretKey"`
+	Language   string `json:"language,omitempty"`
 }
 
 func (c AppConfig) Validate() error {
+	language := c.NormalizedLanguage()
 	if strings.TrimSpace(c.APIBaseURL) == "" {
-		return errors.New("apiBaseUrl is required")
+		return errors.New(i18n.TFor(language, "config.apiBaseUrlRequired"))
 	}
 	if strings.TrimSpace(c.AccessKey) == "" {
-		return errors.New("accessKey is required")
+		return errors.New(i18n.TFor(language, "config.accessKeyRequired"))
 	}
 	if strings.TrimSpace(c.SecretKey) == "" {
-		return errors.New("secretKey is required")
+		return errors.New(i18n.TFor(language, "config.secretKeyRequired"))
+	}
+	if normalized := i18n.NormalizeLanguage(c.Language); normalized == "" && strings.TrimSpace(c.Language) != "" {
+		return errors.New(i18n.T("config.languageUnsupported"))
 	}
 
 	parsed, err := url.Parse(strings.TrimSpace(c.APIBaseURL))
 	if err != nil {
-		return errors.New("apiBaseUrl is not a valid URL")
+		return errors.New(i18n.TFor(language, "config.apiBaseUrlInvalid"))
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return errors.New("apiBaseUrl must start with http:// or https://")
+		return errors.New(i18n.TFor(language, "config.apiBaseUrlScheme"))
 	}
 	if strings.TrimSpace(parsed.Host) == "" {
-		return errors.New("apiBaseUrl must contain a host")
+		return errors.New(i18n.TFor(language, "config.apiBaseUrlHost"))
 	}
 	return nil
 }
@@ -42,6 +48,19 @@ func (c AppConfig) Validate() error {
 func (c AppConfig) NormalizedBaseURL() string {
 	value := strings.TrimSpace(c.APIBaseURL)
 	return strings.TrimRight(value, "/")
+}
+
+func (c AppConfig) NormalizedLanguage() string {
+	normalized := i18n.NormalizeLanguage(c.Language)
+	if normalized == "" {
+		return i18n.DefaultLanguage()
+	}
+	return normalized
+}
+
+func (c AppConfig) WithDefaults() AppConfig {
+	c.Language = c.NormalizedLanguage()
+	return c
 }
 
 type Service struct {
@@ -80,8 +99,9 @@ func (s *Service) Load() (AppConfig, error) {
 
 	var cfg AppConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return AppConfig{}, errors.New("configuration file is not valid JSON")
+		return AppConfig{}, errors.New(i18n.T("config.invalidJSON"))
 	}
+	cfg = cfg.WithDefaults()
 	if err := cfg.Validate(); err != nil {
 		return AppConfig{}, err
 	}
@@ -89,6 +109,7 @@ func (s *Service) Load() (AppConfig, error) {
 }
 
 func (s *Service) Save(cfg AppConfig) error {
+	cfg = cfg.WithDefaults()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}

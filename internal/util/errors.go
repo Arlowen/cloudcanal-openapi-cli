@@ -1,6 +1,7 @@
 package util
 
 import (
+	"cloudcanal-openapi-cli/internal/i18n"
 	"cloudcanal-openapi-cli/internal/openapi"
 	"errors"
 	"strconv"
@@ -16,7 +17,7 @@ func SummarizeError(err error) string {
 	if errors.As(err, &serverErr) {
 		body := strings.TrimSpace(serverErr.ResponseBody)
 		if body == "" {
-			body = "server error"
+			body = i18n.T("util.serverError")
 		}
 		return "HTTP " + strconv.Itoa(serverErr.StatusCode) + ": " + body
 	}
@@ -34,7 +35,7 @@ func SummarizeError(err error) string {
 		message = strings.TrimSpace(err.Error())
 	}
 	if message == "" {
-		return "unknown error"
+		return i18n.T("util.unknownError")
 	}
 	return message
 }

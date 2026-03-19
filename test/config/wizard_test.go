@@ -15,7 +15,7 @@ func TestWizardSavesConfigAfterSuccessfulValidation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	service := config.NewService(path)
-	io := testsupport.NewTestConsole("https://cc.example.com", "test-ak", "test-sk")
+	io := testsupport.NewTestConsole("", "https://cc.example.com", "test-ak", "test-sk")
 
 	wizard := config.NewWizard(io, service, func(cfg config.AppConfig) error {
 		return nil
@@ -28,6 +28,9 @@ func TestWizardSavesConfigAfterSuccessfulValidation(t *testing.T) {
 	if cfg == nil {
 		t.Fatal("Run() returned nil config")
 	}
+	if cfg.Language != "en" {
+		t.Fatalf("Language = %q, want en", cfg.Language)
+	}
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("saved config missing: %v", err)
 	}
@@ -37,7 +40,7 @@ func TestWizardDoesNotPersistOnValidationFailureThenExit(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	service := config.NewService(path)
-	io := testsupport.NewTestConsole("https://cc.example.com", "test-ak", "test-sk", "exit")
+	io := testsupport.NewTestConsole("", "https://cc.example.com", "test-ak", "test-sk", "exit")
 
 	wizard := config.NewWizard(io, service, func(cfg config.AppConfig) error {
 		return errors.New("authentication failed")
@@ -53,7 +56,7 @@ func TestWizardDoesNotPersistOnValidationFailureThenExit(t *testing.T) {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatalf("config file exists unexpectedly, err = %v", err)
 	}
-	if out := io.Output(); out == "" || !strings.Contains(out, "Configuration validation failed") {
+	if out := io.Output(); out == "" || !strings.Contains(out, "Configuration validation failed") || !strings.Contains(out, "language [en]: ") {
 		t.Fatalf("wizard output missing validation failure: %q", out)
 	}
 }
@@ -62,7 +65,7 @@ func TestWizardReusesCurrentValuesAndDoesNotPrintSecret(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 	service := config.NewService(path)
-	io := testsupport.NewTestConsole("", "", "")
+	io := testsupport.NewTestConsole("", "", "", "")
 
 	wizard := config.NewWizard(io, service, func(cfg config.AppConfig) error {
 		return nil
@@ -86,6 +89,7 @@ func TestWizardReusesCurrentValuesAndDoesNotPrintSecret(t *testing.T) {
 	out := io.Output()
 	for _, want := range []string{
 		"Press Enter to keep the current value.",
+		"language [en]: ",
 		"apiHost [https://cc.example.com]: ",
 		"ak [current-ak]: ",
 		"sk [hidden]: ",

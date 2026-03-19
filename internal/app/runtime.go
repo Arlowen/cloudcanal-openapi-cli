@@ -7,6 +7,7 @@ import (
 	"cloudcanal-openapi-cli/internal/consolejob"
 	"cloudcanal-openapi-cli/internal/datajob"
 	"cloudcanal-openapi-cli/internal/datasource"
+	"cloudcanal-openapi-cli/internal/i18n"
 	"cloudcanal-openapi-cli/internal/jobconfig"
 	"cloudcanal-openapi-cli/internal/openapi"
 	"cloudcanal-openapi-cli/internal/worker"
@@ -21,6 +22,7 @@ type RuntimeContext interface {
 	ConsoleJobs() consolejob.Operations
 	JobConfigs() jobconfig.Operations
 	Reinitialize(io console.IO) (bool, error)
+	SetLanguage(language string) error
 }
 
 type Runtime struct {
@@ -45,24 +47,25 @@ func (r *Runtime) InitializeIfNeeded(io console.IO) (bool, error) {
 
 	cfg, err := r.configService.Load()
 	if err != nil {
-		io.Println("Existing configuration is invalid: " + err.Error())
+		io.Println(i18n.T("runtime.invalidConfig", err.Error()))
 		return r.Reinitialize(io)
 	}
 	if err := r.activate(cfg); err != nil {
-		io.Println("Existing configuration is invalid: " + err.Error())
+		io.Println(i18n.T("runtime.invalidConfig", err.Error()))
 		return r.Reinitialize(io)
 	}
 	return true, nil
 }
 
 func (r *Runtime) Reinitialize(io console.IO) (bool, error) {
+	_ = i18n.SetLanguage(r.config.NormalizedLanguage())
 	wizard := config.NewWizard(io, r.configService, r.validateConfig, r.config)
 	cfg, err := wizard.Run()
 	if err != nil {
 		return false, err
 	}
 	if cfg == nil {
-		io.Println("Initialization cancelled.")
+		io.Println(i18n.T("runtime.initCancelled"))
 		return false, nil
 	}
 	if err := r.activate(*cfg); err != nil {
@@ -99,7 +102,18 @@ func (r *Runtime) JobConfigs() jobconfig.Operations {
 	return r.jobConfigs
 }
 
+func (r *Runtime) SetLanguage(language string) error {
+	cfg := r.config
+	cfg.Language = language
+	cfg = cfg.WithDefaults()
+	if err := r.configService.Save(cfg); err != nil {
+		return err
+	}
+	return r.activate(cfg)
+}
+
 func (r *Runtime) validateConfig(cfg config.AppConfig) error {
+	_ = i18n.SetLanguage(cfg.NormalizedLanguage())
 	client, err := openapi.NewClient(cfg)
 	if err != nil {
 		return err
@@ -110,6 +124,8 @@ func (r *Runtime) validateConfig(cfg config.AppConfig) error {
 }
 
 func (r *Runtime) activate(cfg config.AppConfig) error {
+	cfg = cfg.WithDefaults()
+	_ = i18n.SetLanguage(cfg.NormalizedLanguage())
 	client, err := openapi.NewClient(cfg)
 	if err != nil {
 		return err

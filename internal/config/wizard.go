@@ -2,6 +2,7 @@ package config
 
 import (
 	"cloudcanal-openapi-cli/internal/console"
+	"cloudcanal-openapi-cli/internal/i18n"
 	"errors"
 	"io"
 	"strings"
@@ -26,16 +27,30 @@ func NewWizard(io console.IO, service *Service, validator Validator, initial App
 }
 
 func (w *Wizard) Run() (*AppConfig, error) {
-	w.io.Println("CloudCanal CLI initialization")
-	w.io.Println("Type exit at any prompt to cancel.")
-	w.io.Println("apiHost must be a full URL, for example: https://cc.example.com")
-	if w.initial.APIBaseURL != "" || w.initial.AccessKey != "" || w.initial.SecretKey != "" {
-		w.io.Println("Press Enter to keep the current value.")
+	current := w.initial.WithDefaults()
+	_ = i18n.SetLanguage(current.Language)
+	w.io.Println(i18n.T("wizard.title"))
+	w.io.Println(i18n.T("wizard.cancelHint"))
+	w.io.Println(i18n.T("wizard.languageHint"))
+	w.io.Println(i18n.T("wizard.apiHostHint"))
+	if w.hasInitialValue(w.initial) {
+		w.io.Println(i18n.T("wizard.keepCurrent"))
 	}
 
-	current := w.initial
-
 	for {
+		language, cancelled, err := w.promptLanguage(current.Language)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		if cancelled {
+			return nil, nil
+		}
+		current.Language = language
+		_ = i18n.SetLanguage(language)
+
 		apiBaseURL, cancelled, err := w.promptRequired("apiHost", current.APIBaseURL, validateAPIBaseURL)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
@@ -73,22 +88,23 @@ func (w *Wizard) Run() (*AppConfig, error) {
 			APIBaseURL: apiBaseURL,
 			AccessKey:  accessKey,
 			SecretKey:  secretKey,
+			Language:   language,
 		}
 
 		if err := current.Validate(); err != nil {
-			w.io.Println("Invalid configuration: " + err.Error())
+			w.io.Println(i18n.T("wizard.invalidConfig", err.Error()))
 			continue
 		}
-		w.io.Println("Checking OpenAPI connection...")
+		w.io.Println(i18n.T("wizard.checkingConnection"))
 		if err := w.validator(current); err != nil {
-			w.io.Println("Configuration validation failed: " + err.Error())
-			w.io.Println("Press Enter to reuse the current values, or type new ones.")
+			w.io.Println(i18n.T("wizard.validationFailed", err.Error()))
+			w.io.Println(i18n.T("wizard.reuseValues"))
 			continue
 		}
 		if err := w.service.Save(current); err != nil {
 			return nil, err
 		}
-		w.io.Println("Configuration saved to " + w.service.Path())
+		w.io.Println(i18n.T("wizard.savedTo", w.service.Path()))
 		return &current, nil
 	}
 }
@@ -100,7 +116,7 @@ func (w *Wizard) promptRequired(label, current string, validate func(string) err
 			return "", cancelled, err
 		}
 		if err := validate(value); err != nil {
-			w.io.Println("Invalid " + label + ": " + err.Error())
+			w.io.Println(i18n.T("wizard.invalidField", label, err.Error()))
 			continue
 		}
 		return value, false, nil
@@ -124,7 +140,7 @@ func (w *Wizard) promptSecret(label, current string) (string, bool, error) {
 		}
 		if trimmed == "" {
 			if strings.TrimSpace(current) == "" {
-				w.io.Println("Invalid " + label + ": secretKey is required")
+				w.io.Println(i18n.T("wizard.invalidField", label, i18n.T("config.secretKeyRequired")))
 				continue
 			}
 			return current, false, nil
@@ -151,6 +167,28 @@ func (w *Wizard) promptWithDefault(label, current string) (string, bool, error) 
 		return strings.TrimSpace(current), false, nil
 	}
 	return trimmed, false, nil
+}
+
+func (w *Wizard) promptLanguage(current string) (string, bool, error) {
+	for {
+		value, cancelled, err := w.promptWithDefault("language", current)
+		if err != nil || cancelled {
+			return "", cancelled, err
+		}
+		normalized := i18n.NormalizeLanguage(value)
+		if normalized == "" {
+			w.io.Println(i18n.T("wizard.invalidField", "language", i18n.T("config.languageUnsupported")))
+			continue
+		}
+		return normalized, false, nil
+	}
+}
+
+func (w *Wizard) hasInitialValue(cfg AppConfig) bool {
+	return strings.TrimSpace(cfg.APIBaseURL) != "" ||
+		strings.TrimSpace(cfg.AccessKey) != "" ||
+		strings.TrimSpace(cfg.SecretKey) != "" ||
+		strings.TrimSpace(cfg.Language) != ""
 }
 
 func validateAPIBaseURL(value string) error {

@@ -13,7 +13,7 @@ import (
 
 func (s *Shell) handleDataSources(tokens []string) error {
 	if len(tokens) < 2 {
-		s.io.Println("Usage: datasources list [--id ID] [--type TYPE] [--deploy-type TYPE] [--host-type TYPE] [--lifecycle STATE] | datasources show <dataSourceId>")
+		s.io.Println(s.usageDataSources())
 		return nil
 	}
 
@@ -26,7 +26,7 @@ func (s *Shell) handleDataSources(tokens []string) error {
 		return s.printDataSources(options)
 	case "show":
 		if len(tokens) != 3 {
-			s.io.Println("Usage: datasources show <dataSourceId>")
+			s.io.Println(s.usageDataSourceShow())
 			return nil
 		}
 		dataSourceID, err := parsePositiveInt64(tokens[2], "dataSourceId")
@@ -35,14 +35,14 @@ func (s *Shell) handleDataSources(tokens []string) error {
 		}
 		return s.printDataSource(dataSourceID)
 	default:
-		s.io.Println("Usage: datasources list [--id ID] [--type TYPE] [--deploy-type TYPE] [--host-type TYPE] [--lifecycle STATE] | datasources show <dataSourceId>")
+		s.io.Println(s.usageDataSources())
 		return nil
 	}
 }
 
 func (s *Shell) handleClusters(tokens []string) error {
 	if len(tokens) < 2 || !strings.EqualFold(tokens[1], "list") {
-		s.io.Println("Usage: clusters list [--name NAME] [--desc DESC] [--cloud CLOUD] [--region REGION]")
+		s.io.Println(s.usageClusters())
 		return nil
 	}
 
@@ -55,7 +55,7 @@ func (s *Shell) handleClusters(tokens []string) error {
 
 func (s *Shell) handleWorkers(tokens []string) error {
 	if len(tokens) < 2 {
-		s.io.Println("Usage: workers list [--cluster-id ID] [--source-id ID] [--target-id ID] | workers start <workerId> | workers stop <workerId>")
+		s.io.Println(s.usageWorkers())
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func (s *Shell) handleWorkers(tokens []string) error {
 		return s.printWorkers(options)
 	case "start", "stop":
 		if len(tokens) != 3 {
-			s.io.Println("Usage: workers " + strings.ToLower(tokens[1]) + " <workerId>")
+			s.io.Println(s.usageWorkerAction(strings.ToLower(tokens[1])))
 			return nil
 		}
 		workerID, err := parsePositiveInt64(tokens[2], "workerId")
@@ -79,23 +79,23 @@ func (s *Shell) handleWorkers(tokens []string) error {
 			if err := s.runtime.Workers().Start(workerID); err != nil {
 				return err
 			}
-			s.io.Println(fmt.Sprintf("Worker %d started successfully", workerID))
+			s.io.Println(s.actionMessage("worker.started", workerID))
 			return nil
 		}
 		if err := s.runtime.Workers().Stop(workerID); err != nil {
 			return err
 		}
-		s.io.Println(fmt.Sprintf("Worker %d stopped successfully", workerID))
+		s.io.Println(s.actionMessage("worker.stopped", workerID))
 		return nil
 	default:
-		s.io.Println("Usage: workers list [--cluster-id ID] [--source-id ID] [--target-id ID] | workers start <workerId> | workers stop <workerId>")
+		s.io.Println(s.usageWorkers())
 		return nil
 	}
 }
 
 func (s *Shell) handleConsoleJobs(tokens []string) error {
 	if len(tokens) != 3 || !strings.EqualFold(tokens[1], "show") {
-		s.io.Println("Usage: consolejobs show <consoleJobId>")
+		s.io.Println(s.usageConsoleJobs())
 		return nil
 	}
 
@@ -108,7 +108,7 @@ func (s *Shell) handleConsoleJobs(tokens []string) error {
 
 func (s *Shell) handleJobConfig(tokens []string) error {
 	if len(tokens) < 2 || !strings.EqualFold(tokens[1], "specs") {
-		s.io.Println("Usage: job-config specs [--type TYPE] [--initial-sync=true|false] [--short-term-sync=true|false]")
+		s.io.Println(s.usageJobConfig())
 		return nil
 	}
 
@@ -125,7 +125,7 @@ func (s *Shell) printDataSources(options datasource.ListOptions) error {
 		return err
 	}
 
-	headers := []string{"ID", "Instance", "Type", "Host", "Deploy", "Lifecycle", "Description"}
+	headers := []string{s.label("id"), s.label("instance"), s.label("type"), s.label("host"), s.label("deploy"), s.label("lifecycleState"), s.label("description")}
 	rows := make([][]string, 0, len(sources))
 	for _, source := range sources {
 		rows = append(rows, []string{
@@ -140,7 +140,7 @@ func (s *Shell) printDataSources(options datasource.ListOptions) error {
 	}
 
 	s.io.Println(util.FormatTable(headers, rows))
-	s.io.Println(fmt.Sprintf("%d data sources", len(sources)))
+	s.io.Println(s.countLabel("datasources", len(sources)))
 	return nil
 }
 
@@ -150,19 +150,19 @@ func (s *Shell) printDataSource(dataSourceID int64) error {
 		return err
 	}
 
-	s.io.Println("Data source details:")
-	s.io.Println("  ID: " + strconv.FormatInt(source.ID, 10))
-	s.io.Println("  Instance ID: " + orDash(source.InstanceID))
-	s.io.Println("  Description: " + orDash(source.InstanceDesc))
-	s.io.Println("  Type: " + orDash(source.DataSourceType))
-	s.io.Println("  Host Type: " + orDash(source.HostType))
-	s.io.Println("  Deploy Type: " + orDash(source.DeployType))
-	s.io.Println("  Region: " + orDash(source.Region))
-	s.io.Println("  Lifecycle: " + orDash(source.LifeCycleState))
-	s.io.Println("  Account: " + orDash(source.AccountName))
-	s.io.Println("  Security Type: " + orDash(source.SecurityType))
-	s.io.Println("  Console Job ID: " + orDash(source.ConsoleJobID))
-	s.io.Println("  Console Task State: " + orDash(source.ConsoleTaskState))
+	s.io.Println(s.sectionTitle("datasource.details"))
+	s.io.Println(s.line(s.label("id"), strconv.FormatInt(source.ID, 10)))
+	s.io.Println(s.line(s.label("instanceId"), orDash(source.InstanceID)))
+	s.io.Println(s.line(s.label("description"), orDash(source.InstanceDesc)))
+	s.io.Println(s.line(s.label("type"), orDash(source.DataSourceType)))
+	s.io.Println(s.line(s.label("host"), orDash(source.HostType)))
+	s.io.Println(s.line(s.label("deploy"), orDash(source.DeployType)))
+	s.io.Println(s.line(s.label("region"), orDash(source.Region)))
+	s.io.Println(s.line(s.label("lifecycle"), orDash(source.LifeCycleState)))
+	s.io.Println(s.line(s.label("account"), orDash(source.AccountName)))
+	s.io.Println(s.line(s.label("securityType"), orDash(source.SecurityType)))
+	s.io.Println(s.line(s.label("consoleJobId"), orDash(source.ConsoleJobID)))
+	s.io.Println(s.line(s.label("consoleTaskState"), orDash(source.ConsoleTaskState)))
 	return nil
 }
 
@@ -172,7 +172,7 @@ func (s *Shell) printClusters(options cluster.ListOptions) error {
 		return err
 	}
 
-	headers := []string{"ID", "Name", "Region", "Cloud", "Workers", "Running", "Abnormal", "Owner"}
+	headers := []string{s.label("id"), s.label("name"), s.label("region"), "Cloud", s.label("workers"), s.label("running"), s.label("abnormal"), s.label("owner")}
 	rows := make([][]string, 0, len(clusters))
 	for _, item := range clusters {
 		rows = append(rows, []string{
@@ -188,7 +188,7 @@ func (s *Shell) printClusters(options cluster.ListOptions) error {
 	}
 
 	s.io.Println(util.FormatTable(headers, rows))
-	s.io.Println(fmt.Sprintf("%d clusters", len(clusters)))
+	s.io.Println(s.countLabel("clusters", len(clusters)))
 	return nil
 }
 
@@ -198,7 +198,7 @@ func (s *Shell) printWorkers(options worker.ListOptions) error {
 		return err
 	}
 
-	headers := []string{"ID", "Name", "State", "Type", "Cluster", "Private IP", "Health", "Load"}
+	headers := []string{s.label("id"), s.label("name"), s.label("state"), s.label("type"), "Cluster", "Private IP", s.label("health"), s.label("load")}
 	rows := make([][]string, 0, len(workers))
 	for _, item := range workers {
 		rows = append(rows, []string{
@@ -214,7 +214,7 @@ func (s *Shell) printWorkers(options worker.ListOptions) error {
 	}
 
 	s.io.Println(util.FormatTable(headers, rows))
-	s.io.Println(fmt.Sprintf("%d workers", len(workers)))
+	s.io.Println(s.countLabel("workers", len(workers)))
 	return nil
 }
 
@@ -224,24 +224,24 @@ func (s *Shell) printConsoleJob(consoleJobID int64) error {
 		return err
 	}
 
-	s.io.Println("Console job details:")
-	s.io.Println("  ID: " + strconv.FormatInt(job.ID, 10))
-	s.io.Println("  Label: " + orDash(job.Label))
-	s.io.Println("  State: " + orDash(job.TaskState))
-	s.io.Println("  Job Token: " + orDash(job.JobToken))
-	s.io.Println("  Launcher: " + orDash(job.Launcher))
-	s.io.Println("  Data Job Name: " + orDash(job.DataJobName))
-	s.io.Println("  Data Job Desc: " + orDash(job.DataJobDesc))
-	s.io.Println("  Worker Name: " + orDash(job.WorkerName))
-	s.io.Println("  Worker Desc: " + orDash(job.WorkerDesc))
-	s.io.Println("  Data Source Instance: " + orDash(job.DsInstanceID))
-	s.io.Println("  Data Source Desc: " + orDash(job.DatasourceDesc))
-	s.io.Println("  Resource Type: " + orDash(job.ResourceType))
-	s.io.Println("  Resource ID: " + formatOptionalInt64(job.ResourceID))
-	s.io.Println("  Tasks: " + strconv.Itoa(len(job.TaskVOList)))
+	s.io.Println(s.sectionTitle("consolejob.details"))
+	s.io.Println(s.line(s.label("id"), strconv.FormatInt(job.ID, 10)))
+	s.io.Println(s.line(s.label("label"), orDash(job.Label)))
+	s.io.Println(s.line(s.label("state"), orDash(job.TaskState)))
+	s.io.Println(s.line(s.label("jobToken"), orDash(job.JobToken)))
+	s.io.Println(s.line(s.label("launcher"), orDash(job.Launcher)))
+	s.io.Println(s.line(s.label("dataJobName"), orDash(job.DataJobName)))
+	s.io.Println(s.line(s.label("dataJobDesc"), orDash(job.DataJobDesc)))
+	s.io.Println(s.line(s.label("workerName"), orDash(job.WorkerName)))
+	s.io.Println(s.line(s.label("workerDesc"), orDash(job.WorkerDesc)))
+	s.io.Println(s.line(s.label("dataSourceInstance"), orDash(job.DsInstanceID)))
+	s.io.Println(s.line(s.label("dataSourceDesc"), orDash(job.DatasourceDesc)))
+	s.io.Println(s.line(s.label("resourceType"), orDash(job.ResourceType)))
+	s.io.Println(s.line(s.label("resourceId"), formatOptionalInt64(job.ResourceID)))
+	s.io.Println(s.line(s.label("tasks"), strconv.Itoa(len(job.TaskVOList))))
 
 	if len(job.TaskVOList) > 0 {
-		headers := []string{"Task ID", "State", "Step", "Host", "Order", "Cancelable"}
+		headers := []string{s.label("taskId"), s.label("state"), s.label("step"), s.label("host"), s.label("order"), s.label("cancelable")}
 		rows := make([][]string, 0, len(job.TaskVOList))
 		for _, task := range job.TaskVOList {
 			rows = append(rows, []string{
@@ -265,7 +265,7 @@ func (s *Shell) printSpecs(options jobconfig.ListSpecsOptions) error {
 		return err
 	}
 
-	headers := []string{"ID", "Job Type", "Kind", "Spec", "Full MB", "Incre MB", "Check MB"}
+	headers := []string{s.label("id"), "Job Type", s.label("kind"), s.label("spec"), s.label("fullMB"), s.label("increMB"), s.label("checkMB")}
 	rows := make([][]string, 0, len(specs))
 	for _, spec := range specs {
 		rows = append(rows, []string{
@@ -280,7 +280,7 @@ func (s *Shell) printSpecs(options jobconfig.ListSpecsOptions) error {
 	}
 
 	s.io.Println(util.FormatTable(headers, rows))
-	s.io.Println(fmt.Sprintf("%d specs", len(specs)))
+	s.io.Println(s.countLabel("specs", len(specs)))
 	return nil
 }
 

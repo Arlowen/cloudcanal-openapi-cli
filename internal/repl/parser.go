@@ -1,7 +1,8 @@
 package repl
 
 import (
-	"fmt"
+	"cloudcanal-openapi-cli/internal/i18n"
+	"errors"
 	"strconv"
 	"strings"
 	"unicode"
@@ -47,10 +48,10 @@ func splitCommandLine(line string) ([]string, error) {
 	}
 
 	if escaped {
-		return nil, fmt.Errorf("unterminated escape sequence")
+		return nil, errors.New(i18n.T("parser.unterminatedEscape"))
 	}
 	if quote != 0 {
-		return nil, fmt.Errorf("unterminated quote")
+		return nil, errors.New(i18n.T("parser.unterminatedQuote"))
 	}
 	if tokenStarted {
 		tokens = append(tokens, current.String())
@@ -63,12 +64,12 @@ func parseFlagArgs(tokens []string) (map[string]string, error) {
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 		if !strings.HasPrefix(token, "--") {
-			return nil, fmt.Errorf("unexpected argument: %s", token)
+			return nil, errors.New(i18n.T("parser.unexpectedArgument", token))
 		}
 
 		raw := strings.TrimPrefix(token, "--")
 		if raw == "" {
-			return nil, fmt.Errorf("invalid option: %s", token)
+			return nil, errors.New(i18n.T("parser.invalidOption", token))
 		}
 
 		name := raw
@@ -77,7 +78,7 @@ func parseFlagArgs(tokens []string) (map[string]string, error) {
 			var ok bool
 			name, value, ok = strings.Cut(raw, "=")
 			if !ok || name == "" {
-				return nil, fmt.Errorf("invalid option: %s", token)
+				return nil, errors.New(i18n.T("parser.invalidOption", token))
 			}
 		} else if i+1 < len(tokens) && !strings.HasPrefix(tokens[i+1], "--") {
 			value = tokens[i+1]
@@ -85,7 +86,7 @@ func parseFlagArgs(tokens []string) (map[string]string, error) {
 		}
 
 		if _, exists := options[name]; exists {
-			return nil, fmt.Errorf("duplicate option: --%s", name)
+			return nil, errors.New(i18n.T("parser.duplicateOption", name))
 		}
 		options[name] = value
 	}
@@ -104,7 +105,7 @@ func popOption(options map[string]string, names ...string) (string, bool) {
 
 func ensureNoUnknownOptions(options map[string]string) error {
 	for name := range options {
-		return fmt.Errorf("unknown option: --%s", name)
+		return errors.New(i18n.T("parser.unknownOption", name))
 	}
 	return nil
 }
@@ -112,7 +113,7 @@ func ensureNoUnknownOptions(options map[string]string) error {
 func parsePositiveInt64(value string, fieldName string) (int64, error) {
 	parsed, err := strconv.ParseInt(value, 10, 64)
 	if err != nil || parsed <= 0 {
-		return 0, fmt.Errorf("%s must be a positive integer", fieldName)
+		return 0, errors.New(i18n.T("parser.mustBePositiveInt", fieldLabel(fieldName)))
 	}
 	return parsed, nil
 }
@@ -132,7 +133,7 @@ func parseBoolOption(options map[string]string, fieldName string, names ...strin
 	}
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
-		return nil, fmt.Errorf("%s must be a boolean", fieldName)
+		return nil, errors.New(i18n.T("parser.mustBeBoolean", fieldLabel(fieldName)))
 	}
 	return &parsed, nil
 }
@@ -156,4 +157,33 @@ func orDash(value string) string {
 		return "-"
 	}
 	return value
+}
+
+func fieldLabel(fieldName string) string {
+	switch fieldName {
+	case "jobId":
+		return i18n.T("parser.jobId")
+	case "workerId":
+		return i18n.T("parser.workerId")
+	case "consoleJobId":
+		return i18n.T("parser.consoleJobId")
+	case "dataSourceId":
+		return i18n.T("parser.dataSourceId")
+	case "sourceInstanceId":
+		return i18n.T("parser.sourceInstanceId")
+	case "targetInstanceId":
+		return i18n.T("parser.targetInstanceId")
+	case "clusterId":
+		return i18n.T("parser.clusterId")
+	case "initialSync":
+		return i18n.T("parser.initialSync")
+	case "shortTermSync":
+		return i18n.T("parser.shortTermSync")
+	case "autoStart":
+		return i18n.T("parser.autoStart")
+	case "resetToCreated":
+		return i18n.T("parser.resetToCreated")
+	default:
+		return fieldName
+	}
 }

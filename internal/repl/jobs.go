@@ -3,14 +3,13 @@ package repl
 import (
 	"cloudcanal-openapi-cli/internal/datajob"
 	"cloudcanal-openapi-cli/internal/util"
-	"fmt"
 	"strconv"
 	"strings"
 )
 
 func (s *Shell) handleJobs(tokens []string) error {
 	if len(tokens) < 2 {
-		s.io.Println("Usage: jobs list | jobs show <jobId> | jobs schema <jobId> | jobs start <jobId> | jobs stop <jobId> | jobs delete <jobId> | jobs replay <jobId> [--auto-start] [--reset-to-created]")
+		s.io.Println(s.usageJobsGroup())
 		return nil
 	}
 
@@ -23,7 +22,7 @@ func (s *Shell) handleJobs(tokens []string) error {
 		return s.printJobs(options)
 	case "show":
 		if len(tokens) != 3 {
-			s.io.Println("Usage: jobs show <jobId>")
+			s.io.Println(s.usageJobAction("show"))
 			return nil
 		}
 		jobID, err := parsePositiveInt64(tokens[2], "jobId")
@@ -33,7 +32,7 @@ func (s *Shell) handleJobs(tokens []string) error {
 		return s.printJob(jobID)
 	case "schema":
 		if len(tokens) != 3 {
-			s.io.Println("Usage: jobs schema <jobId>")
+			s.io.Println(s.usageJobAction("schema"))
 			return nil
 		}
 		jobID, err := parsePositiveInt64(tokens[2], "jobId")
@@ -43,7 +42,7 @@ func (s *Shell) handleJobs(tokens []string) error {
 		return s.printJobSchema(jobID)
 	case "start", "stop", "delete":
 		if len(tokens) != 3 {
-			s.io.Println("Usage: jobs " + strings.ToLower(tokens[1]) + " <jobId>")
+			s.io.Println(s.usageJobAction(strings.ToLower(tokens[1])))
 			return nil
 		}
 		jobID, err := parsePositiveInt64(tokens[2], "jobId")
@@ -55,22 +54,22 @@ func (s *Shell) handleJobs(tokens []string) error {
 			if err := s.runtime.DataJobs().StartJob(jobID); err != nil {
 				return err
 			}
-			s.io.Println(fmt.Sprintf("Job %d started successfully", jobID))
+			s.io.Println(s.actionMessage("job.started", jobID))
 		case "stop":
 			if err := s.runtime.DataJobs().StopJob(jobID); err != nil {
 				return err
 			}
-			s.io.Println(fmt.Sprintf("Job %d stopped successfully", jobID))
+			s.io.Println(s.actionMessage("job.stopped", jobID))
 		default:
 			if err := s.runtime.DataJobs().DeleteJob(jobID); err != nil {
 				return err
 			}
-			s.io.Println(fmt.Sprintf("Job %d deleted successfully", jobID))
+			s.io.Println(s.actionMessage("job.deleted", jobID))
 		}
 		return nil
 	case "replay":
 		if len(tokens) < 3 {
-			s.io.Println("Usage: jobs replay <jobId> [--auto-start] [--reset-to-created]")
+			s.io.Println(s.usageJobReplay())
 			return nil
 		}
 		jobID, err := parsePositiveInt64(tokens[2], "jobId")
@@ -84,10 +83,10 @@ func (s *Shell) handleJobs(tokens []string) error {
 		if err := s.runtime.DataJobs().ReplayJob(jobID, options); err != nil {
 			return err
 		}
-		s.io.Println(fmt.Sprintf("Job %d replay requested successfully", jobID))
+		s.io.Println(s.actionMessage("job.replayed", jobID))
 		return nil
 	default:
-		s.io.Println("Usage: jobs list | jobs show <jobId> | jobs schema <jobId> | jobs start <jobId> | jobs stop <jobId> | jobs delete <jobId> | jobs replay <jobId> [--auto-start] [--reset-to-created]")
+		s.io.Println(s.usageJobsGroup())
 		return nil
 	}
 }
@@ -98,7 +97,7 @@ func (s *Shell) printJobs(options datajob.ListOptions) error {
 		return err
 	}
 
-	headers := []string{"ID", "Name", "Type", "State", "Source", "Target"}
+	headers := []string{s.label("id"), s.label("name"), s.label("type"), s.label("state"), s.label("source"), s.label("target")}
 	rows := make([][]string, 0, len(jobs))
 	for _, job := range jobs {
 		rows = append(rows, []string{
@@ -112,7 +111,7 @@ func (s *Shell) printJobs(options datajob.ListOptions) error {
 	}
 
 	s.io.Println(util.FormatTable(headers, rows))
-	s.io.Println(fmt.Sprintf("%d jobs", len(jobs)))
+	s.io.Println(s.countLabel("jobs", len(jobs)))
 	return nil
 }
 
@@ -122,26 +121,26 @@ func (s *Shell) printJob(jobID int64) error {
 		return err
 	}
 
-	s.io.Println("Job details:")
-	s.io.Println("  ID: " + strconv.FormatInt(job.DataJobID, 10))
-	s.io.Println("  Name: " + orDash(job.DataJobName))
-	s.io.Println("  Description: " + orDash(job.DataJobDesc))
-	s.io.Println("  Type: " + orDash(job.DataJobType))
-	s.io.Println("  State: " + orDash(job.DataTaskState))
-	s.io.Println("  Current Task Status: " + orDash(job.CurrTaskStatus))
-	s.io.Println("  Lifecycle: " + orDash(job.LifeCycleState))
-	s.io.Println("  User: " + orDash(job.UserName))
-	s.io.Println("  Console Job ID: " + formatOptionalInt64(job.ConsoleJobID))
-	s.io.Println("  Console Task State: " + orDash(job.ConsoleTaskState))
-	s.io.Println("  Source: " + sourceSummary(job.SourceDS))
-	s.io.Println("  Target: " + sourceSummary(job.TargetDS))
-	s.io.Println("  Source Schema: " + orDash(job.SourceSchema))
-	s.io.Println("  Target Schema: " + orDash(job.TargetSchema))
-	s.io.Println("  Tasks: " + strconv.Itoa(len(job.DataTasks)))
-	s.io.Println("  Has Exception: " + formatBool(job.HaveException))
+	s.io.Println(s.sectionTitle("job.details"))
+	s.io.Println(s.line(s.label("id"), strconv.FormatInt(job.DataJobID, 10)))
+	s.io.Println(s.line(s.label("name"), orDash(job.DataJobName)))
+	s.io.Println(s.line(s.label("description"), orDash(job.DataJobDesc)))
+	s.io.Println(s.line(s.label("type"), orDash(job.DataJobType)))
+	s.io.Println(s.line(s.label("state"), orDash(job.DataTaskState)))
+	s.io.Println(s.line(s.label("currentTaskStatus"), orDash(job.CurrTaskStatus)))
+	s.io.Println(s.line(s.label("lifecycle"), orDash(job.LifeCycleState)))
+	s.io.Println(s.line(s.label("user"), orDash(job.UserName)))
+	s.io.Println(s.line(s.label("consoleJobId"), formatOptionalInt64(job.ConsoleJobID)))
+	s.io.Println(s.line(s.label("consoleTaskState"), orDash(job.ConsoleTaskState)))
+	s.io.Println(s.line(s.label("source"), sourceSummary(job.SourceDS)))
+	s.io.Println(s.line(s.label("target"), sourceSummary(job.TargetDS)))
+	s.io.Println(s.line(s.label("sourceSchema"), orDash(job.SourceSchema)))
+	s.io.Println(s.line(s.label("targetSchema"), orDash(job.TargetSchema)))
+	s.io.Println(s.line(s.label("tasks"), strconv.Itoa(len(job.DataTasks))))
+	s.io.Println(s.line(s.label("hasException"), formatBool(job.HaveException)))
 
 	if len(job.DataTasks) > 0 {
-		headers := []string{"Task ID", "Name", "Type", "Status", "Worker IP"}
+		headers := []string{s.label("taskId"), s.label("name"), s.label("type"), s.label("state"), s.label("workerIP")}
 		rows := make([][]string, 0, len(job.DataTasks))
 		for _, task := range job.DataTasks {
 			rows = append(rows, []string{
@@ -164,18 +163,18 @@ func (s *Shell) printJobSchema(jobID int64) error {
 		return err
 	}
 
-	s.io.Println("Job schema:")
-	s.io.Println("  Job ID: " + strconv.FormatInt(jobID, 10))
-	s.io.Println("  Source Schema: " + orDash(schema.SourceSchema))
-	s.io.Println("  Target Schema: " + orDash(schema.TargetSchema))
-	s.io.Println("  Default Topic: " + orDash(schema.DefaultTopic))
-	s.io.Println("  Default Topic Partition: " + formatOptionalInt64(int64(schema.DefaultTopicPartition)))
-	s.io.Println("  Schema Whitelist Level: " + orDash(schema.SchemaWhiteListLevel))
-	s.io.Println("  Source Schema Less Format: " + orDash(schema.SrcSchemaLessFormat))
-	s.io.Println("  Target Schema Less Format: " + orDash(schema.DstSchemaLessFormat))
+	s.io.Println(s.sectionTitle("job.schema"))
+	s.io.Println(s.line(s.label("id"), strconv.FormatInt(jobID, 10)))
+	s.io.Println(s.line(s.label("sourceSchema"), orDash(schema.SourceSchema)))
+	s.io.Println(s.line(s.label("targetSchema"), orDash(schema.TargetSchema)))
+	s.io.Println(s.line(s.label("defaultTopic"), orDash(schema.DefaultTopic)))
+	s.io.Println(s.line(s.label("defaultTopicPartition"), formatOptionalInt64(int64(schema.DefaultTopicPartition))))
+	s.io.Println(s.line(s.label("schemaWhitelistLevel"), orDash(schema.SchemaWhiteListLevel)))
+	s.io.Println(s.line(s.label("srcSchemaLessFormat"), orDash(schema.SrcSchemaLessFormat)))
+	s.io.Println(s.line(s.label("dstSchemaLessFormat"), orDash(schema.DstSchemaLessFormat)))
 	if strings.TrimSpace(schema.MappingConfig) != "" {
 		s.io.Println("")
-		s.io.Println("Mapping Config:")
+		s.io.Println(s.sectionTitle("job.mappingConfig"))
 		s.io.Println(schema.MappingConfig)
 	}
 	return nil

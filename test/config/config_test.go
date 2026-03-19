@@ -25,7 +25,7 @@ func TestServiceSaveAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if loaded.APIBaseURL != cfg.APIBaseURL || loaded.AccessKey != cfg.AccessKey || loaded.SecretKey != cfg.SecretKey {
+	if loaded.APIBaseURL != cfg.APIBaseURL || loaded.AccessKey != cfg.AccessKey || loaded.SecretKey != cfg.SecretKey || loaded.Language != "en" {
 		t.Fatalf("loaded config = %+v, want %+v", loaded, cfg)
 	}
 }

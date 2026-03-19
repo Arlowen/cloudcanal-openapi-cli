@@ -8,6 +8,7 @@ import (
 	"cloudcanal-openapi-cli/internal/consolejob"
 	"cloudcanal-openapi-cli/internal/datajob"
 	"cloudcanal-openapi-cli/internal/datasource"
+	"cloudcanal-openapi-cli/internal/i18n"
 	"cloudcanal-openapi-cli/internal/jobconfig"
 	"cloudcanal-openapi-cli/internal/repl"
 	"cloudcanal-openapi-cli/internal/worker"
@@ -105,7 +106,7 @@ func TestShellHandlesHappyPathCommands(t *testing.T) {
 		jobConfigs:  jobConfigs,
 	}
 	io := testsupport.NewTestConsole(
-		"help",
+		"help jobs",
 		`jobs list --name sync-job --type SYNC --desc "nightly sync" --source-id 101 --target-id 202`,
 		"jobs show 11",
 		"jobs schema 11",
@@ -121,6 +122,9 @@ func TestShellHandlesHappyPathCommands(t *testing.T) {
 		"workers stop 5",
 		"consolejobs show 21",
 		"job-config specs --type SYNC --initial-sync=true --short-term-sync=false",
+		"lang show",
+		"lang set zh",
+		"lang set en",
 		"config show",
 		"exit",
 	)
@@ -157,7 +161,8 @@ func TestShellHandlesHappyPathCommands(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"Available commands:",
+		"jobs commands",
+		"--name       Filter by data job name.",
 		"sync-job",
 		"Job details:",
 		"nightly sync",
@@ -176,8 +181,12 @@ func TestShellHandlesHappyPathCommands(t *testing.T) {
 		"Console job details:",
 		"WORKER_INSTALL",
 		"STANDARD",
+		"Current language: en",
+		"语言已切换为 中文。",
+		"Language switched to English.",
 		"apiBaseUrl: https://cc.example.com",
 		"accessKey: abcd****ijkl",
+		"language: en",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("output missing %q in %q", want, out)
@@ -278,6 +287,35 @@ func TestShellExecutesArgsWithoutInteractiveLoop(t *testing.T) {
 	}
 }
 
+func TestShellSwitchesLanguageForFollowUpOutput(t *testing.T) {
+	runtime := &fakeRuntime{
+		cfg:         config.AppConfig{APIBaseURL: "https://cc.example.com", AccessKey: "abcdefghijkl", SecretKey: "qrstuvwxyz1234"},
+		dataJobs:    &fakeDataJobs{},
+		dataSources: &fakeDataSources{},
+		clusters:    &fakeClusters{},
+		workers:     &fakeWorkers{},
+		consoleJobs: &fakeConsoleJobs{},
+		jobConfigs:  &fakeJobConfigs{},
+	}
+	io := testsupport.NewTestConsole("lang set zh", "help lang", "exit")
+
+	shell := repl.NewShell(io, runtime)
+	if err := shell.Run(); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	out := io.Output()
+	for _, want := range []string{
+		"语言已切换为 中文。",
+		"lang 命令",
+		"立即切换 CLI 文案语言并持久化到配置文件。",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("output missing %q in %q", want, out)
+		}
+	}
+}
+
 type fakeRuntime struct {
 	cfg               config.AppConfig
 	dataJobs          datajob.Operations
@@ -321,6 +359,12 @@ func (f *fakeRuntime) JobConfigs() jobconfig.Operations {
 func (f *fakeRuntime) Reinitialize(io console.IO) (bool, error) {
 	f.reinitializeCalls++
 	return f.reinitializeValue, nil
+}
+
+func (f *fakeRuntime) SetLanguage(language string) error {
+	f.cfg.Language = language
+	_ = i18n.SetLanguage(language)
+	return nil
 }
 
 var _ app.RuntimeContext = (*fakeRuntime)(nil)

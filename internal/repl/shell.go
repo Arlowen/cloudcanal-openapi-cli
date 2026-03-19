@@ -3,6 +3,7 @@ package repl
 import (
 	"cloudcanal-openapi-cli/internal/app"
 	"cloudcanal-openapi-cli/internal/console"
+	"cloudcanal-openapi-cli/internal/i18n"
 	"cloudcanal-openapi-cli/internal/util"
 	"io"
 	"strings"
@@ -16,6 +17,7 @@ type Shell struct {
 }
 
 func NewShell(io console.IO, runtime app.RuntimeContext) *Shell {
+	_ = i18n.SetLanguage(runtime.Config().NormalizedLanguage())
 	return &Shell{io: io, runtime: runtime}
 }
 
@@ -28,7 +30,7 @@ func (s *Shell) ExecuteArgs(args []string) error {
 }
 
 func (s *Shell) Run() error {
-	s.io.Println("Type 'help' to see available commands.")
+	s.io.Println(i18n.T("common.typeHelp"))
 	for {
 		line, err := s.io.ReadLine(prompt)
 		if err != nil {
@@ -48,7 +50,7 @@ func (s *Shell) Run() error {
 		}
 
 		if err := s.handle(line); err != nil {
-			s.io.Println("Error: " + util.SummarizeError(err))
+			s.io.Println(i18n.T("common.errorPrefix", util.SummarizeError(err)))
 		}
 	}
 }
@@ -68,7 +70,7 @@ func (s *Shell) handleTokens(tokens []string, commandLine string) error {
 
 	switch strings.ToLower(tokens[0]) {
 	case "help":
-		s.printHelp()
+		s.printHelp(tokens[1:])
 		return nil
 	case "jobs":
 		return s.handleJobs(tokens)
@@ -84,23 +86,26 @@ func (s *Shell) handleTokens(tokens []string, commandLine string) error {
 		return s.handleJobConfig(tokens)
 	case "config":
 		return s.handleConfig(tokens)
+	case "lang", "language":
+		return s.handleLang(tokens)
 	default:
-		s.io.Println("Unknown command: " + commandLine)
-		s.io.Println("Use 'help' to see available commands.")
+		s.io.Println(i18n.T("common.unknownCommand", commandLine))
+		s.io.Println(i18n.T("common.useHelp"))
 		return nil
 	}
 }
 
 func (s *Shell) handleConfig(tokens []string) error {
 	if len(tokens) != 2 {
-		s.io.Println("Usage: config show | config init")
+		s.io.Println(s.usageConfig())
 		return nil
 	}
 	switch strings.ToLower(tokens[1]) {
 	case "show":
 		cfg := s.runtime.Config()
-		s.io.Println("apiBaseUrl: " + cfg.APIBaseURL)
-		s.io.Println("accessKey: " + util.MaskSecret(cfg.AccessKey))
+		s.io.Println(i18n.T("config.apiBaseUrlLabel") + ": " + cfg.APIBaseURL)
+		s.io.Println(i18n.T("config.accessKeyLabel") + ": " + util.MaskSecret(cfg.AccessKey))
+		s.io.Println(i18n.T("config.languageLabel") + ": " + cfg.NormalizedLanguage())
 		return nil
 	case "init":
 		updated, err := s.runtime.Reinitialize(s.io)
@@ -108,34 +113,36 @@ func (s *Shell) handleConfig(tokens []string) error {
 			return err
 		}
 		if updated {
-			s.io.Println("Configuration updated.")
+			s.io.Println(i18n.T("runtime.configUpdated"))
 		}
 		return nil
 	default:
-		s.io.Println("Usage: config show | config init")
+		s.io.Println(s.usageConfig())
 		return nil
 	}
 }
 
-func (s *Shell) printHelp() {
-	s.io.Println("Available commands:")
-	s.io.Println("  jobs list [--name NAME] [--type TYPE] [--desc DESC] [--source-id ID] [--target-id ID]")
-	s.io.Println("  jobs show <jobId>")
-	s.io.Println("  jobs schema <jobId>")
-	s.io.Println("  jobs start <jobId>")
-	s.io.Println("  jobs stop <jobId>")
-	s.io.Println("  jobs delete <jobId>")
-	s.io.Println("  jobs replay <jobId> [--auto-start] [--reset-to-created]")
-	s.io.Println("  datasources list [--id ID] [--type TYPE] [--deploy-type TYPE] [--host-type TYPE] [--lifecycle STATE]")
-	s.io.Println("  datasources show <dataSourceId>")
-	s.io.Println("  clusters list [--name NAME] [--desc DESC] [--cloud CLOUD] [--region REGION]")
-	s.io.Println("  workers list [--cluster-id ID] [--source-id ID] [--target-id ID]")
-	s.io.Println("  workers start <workerId>")
-	s.io.Println("  workers stop <workerId>")
-	s.io.Println("  consolejobs show <consoleJobId>")
-	s.io.Println("  job-config specs [--type TYPE] [--initial-sync=true|false] [--short-term-sync=true|false]")
-	s.io.Println("  config show")
-	s.io.Println("  config init")
-	s.io.Println("  help")
-	s.io.Println("  exit | quit")
+func (s *Shell) handleLang(tokens []string) error {
+	if len(tokens) == 1 || strings.EqualFold(tokens[1], "show") {
+		if len(tokens) > 2 {
+			s.io.Println(i18n.T("lang.usage"))
+			return nil
+		}
+		s.io.Println(i18n.T("lang.current", s.runtime.Config().NormalizedLanguage()))
+		s.io.Println(i18n.T("common.supportedLanguages"))
+		return nil
+	}
+	if strings.EqualFold(tokens[1], "set") {
+		if len(tokens) != 3 {
+			s.io.Println(i18n.T("lang.usage"))
+			return nil
+		}
+		if err := s.runtime.SetLanguage(tokens[2]); err != nil {
+			return err
+		}
+		s.io.Println(i18n.T("lang.updated", i18n.DisplayName(s.runtime.Config().NormalizedLanguage())))
+		return nil
+	}
+	s.io.Println(i18n.T("lang.usage"))
+	return nil
 }
