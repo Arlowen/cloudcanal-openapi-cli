@@ -1,4 +1,5 @@
-/bin/cloudcanal
-/target/
-/coverage.out
-/.DS_Store
+# Build outputs
+/bin/
+
+# Local macOS metadata
+.DS_Store
