@@ -13,17 +13,25 @@ log_info()    { _log "INFO" "34" "$@"; }
 log_success() { _log "SUCCESS" "32" "$@"; }
 log_error()   { _log "ERROR" "31" "$@" >&2; }
 
+default_shell_rc() {
+  case "$(basename "${SHELL:-}")" in
+    bash) printf '%s\n' "$HOME/.bashrc" ;;
+    *) printf '%s\n' "$HOME/.zshrc" ;;
+  esac
+}
+
 APP_NAME="${APP_NAME:-cloudcanal}"
 REPO_OWNER="${REPO_OWNER:-Arlowen}"
 REPO_NAME="${REPO_NAME:-cloudcanal-openapi-cli}"
 RELEASE_VERSION="${RELEASE_VERSION:-latest}"
-INSTALL_ROOT="${INSTALL_ROOT:-$HOME/.local/share/$REPO_NAME}"
-INSTALL_BIN_DIR="${INSTALL_BIN_DIR:-$HOME/bin}"
+INSTALL_ROOT="${INSTALL_ROOT:-$HOME/.cloudcanal-cli}"
+INSTALL_BIN_DIR="${INSTALL_BIN_DIR:-$INSTALL_ROOT/bin}"
 INSTALL_PATH="$INSTALL_BIN_DIR/$APP_NAME"
-INSTALL_SHELL_RC="${INSTALL_SHELL_RC:-$HOME/.zshrc}"
-INSTALL_ZSH_COMPLETION_DIR="${INSTALL_ZSH_COMPLETION_DIR:-$HOME/.zsh/completions}"
-INSTALL_BASH_COMPLETION_DIR="${INSTALL_BASH_COMPLETION_DIR:-$HOME/.local/share/bash-completion/completions}"
-INSTALL_BIN_PATH="$INSTALL_ROOT/bin/$APP_NAME"
+INSTALL_BIN_PATH="$INSTALL_PATH"
+INSTALL_SHELL_RC="${INSTALL_SHELL_RC:-$(default_shell_rc)}"
+INSTALL_COMPLETION_DIR="${INSTALL_COMPLETION_DIR:-$INSTALL_ROOT/completions}"
+INSTALL_ZSH_COMPLETION_DIR="${INSTALL_ZSH_COMPLETION_DIR:-$INSTALL_COMPLETION_DIR/zsh}"
+INSTALL_BASH_COMPLETION_DIR="${INSTALL_BASH_COMPLETION_DIR:-$INSTALL_COMPLETION_DIR/bash}"
 ZSH_COMPLETION_PATH="$INSTALL_ZSH_COMPLETION_DIR/_$APP_NAME"
 BASH_COMPLETION_PATH="$INSTALL_BASH_COMPLETION_DIR/$APP_NAME"
 PATH_MARK_START="# >>> cloudcanal-openapi-cli >>>"
@@ -35,6 +43,15 @@ TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/${REPO_NAME}.XXXXXX")"
 ARCHIVE_PATH="$TMP_DIR/$APP_NAME.tar.gz"
 CHECKSUMS_PATH="$TMP_DIR/checksums.txt"
 EXTRACT_DIR="$TMP_DIR/extract"
+
+LEGACY_INSTALL_ROOT="${LEGACY_INSTALL_ROOT:-$HOME/.local/share/$REPO_NAME}"
+LEGACY_INSTALL_BIN_DIR="${LEGACY_INSTALL_BIN_DIR:-$HOME/bin}"
+LEGACY_INSTALL_PATH="$LEGACY_INSTALL_BIN_DIR/$APP_NAME"
+LEGACY_INSTALL_BIN_PATH="$LEGACY_INSTALL_ROOT/bin/$APP_NAME"
+LEGACY_INSTALL_ZSH_COMPLETION_DIR="${LEGACY_INSTALL_ZSH_COMPLETION_DIR:-$HOME/.zsh/completions}"
+LEGACY_INSTALL_BASH_COMPLETION_DIR="${LEGACY_INSTALL_BASH_COMPLETION_DIR:-$HOME/.local/share/bash-completion/completions}"
+LEGACY_ZSH_COMPLETION_PATH="$LEGACY_INSTALL_ZSH_COMPLETION_DIR/_$APP_NAME"
+LEGACY_BASH_COMPLETION_PATH="$LEGACY_INSTALL_BASH_COMPLETION_DIR/$APP_NAME"
 
 cleanup() {
   rm -rf "$TMP_DIR"
@@ -171,8 +188,51 @@ verify_archive_checksum() {
   log_success "Verified release checksum for $ARCHIVE_NAME"
 }
 
+strip_rc_block() {
+  local start_mark="$1"
+  local end_mark="$2"
+  local tmp_file
+  tmp_file="$(mktemp)"
+
+  if [[ -f "$INSTALL_SHELL_RC" ]]; then
+    awk -v start="$start_mark" -v end="$end_mark" '
+      $0 == start {skip = 1; next}
+      $0 == end {skip = 0; next}
+      !skip {print}
+    ' "$INSTALL_SHELL_RC" > "$tmp_file"
+  fi
+
+  mv "$tmp_file" "$INSTALL_SHELL_RC"
+}
+
+cleanup_legacy_install() {
+  if [[ -L "$LEGACY_INSTALL_PATH" ]]; then
+    local target
+    target="$(readlink "$LEGACY_INSTALL_PATH")"
+    if [[ "$target" == "$LEGACY_INSTALL_BIN_PATH" ]]; then
+      rm -f "$LEGACY_INSTALL_PATH"
+      log_info "Removed legacy managed symlink $LEGACY_INSTALL_PATH"
+    fi
+  fi
+
+  if [[ -f "$LEGACY_ZSH_COMPLETION_PATH" ]]; then
+    rm -f "$LEGACY_ZSH_COMPLETION_PATH"
+    log_info "Removed legacy zsh completion $LEGACY_ZSH_COMPLETION_PATH"
+  fi
+
+  if [[ -f "$LEGACY_BASH_COMPLETION_PATH" ]]; then
+    rm -f "$LEGACY_BASH_COMPLETION_PATH"
+    log_info "Removed legacy bash completion $LEGACY_BASH_COMPLETION_PATH"
+  fi
+
+  if [[ -d "$LEGACY_INSTALL_ROOT" ]]; then
+    rm -rf "$LEGACY_INSTALL_ROOT"
+    log_info "Removed legacy install root $LEGACY_INSTALL_ROOT"
+  fi
+}
+
 install_binary() {
-  mkdir -p "$INSTALL_ROOT/bin" "$EXTRACT_DIR"
+  mkdir -p "$INSTALL_BIN_DIR" "$EXTRACT_DIR"
 
   local url
   url="$(download_url)"
@@ -189,18 +249,14 @@ install_binary() {
     exit 1
   fi
 
-  install -m 755 "$extracted_binary" "$INSTALL_BIN_PATH"
-  log_success "Installed binary to $INSTALL_BIN_PATH"
+  install -m 755 "$extracted_binary" "$INSTALL_PATH"
+  log_success "Installed binary to $INSTALL_PATH"
 }
 
 ensure_path_block() {
   mkdir -p "$(dirname "$INSTALL_SHELL_RC")"
   touch "$INSTALL_SHELL_RC"
-
-  if grep -Fq "$PATH_MARK_START" "$INSTALL_SHELL_RC"; then
-    log_success "PATH configuration already present in $INSTALL_SHELL_RC"
-    return 0
-  fi
+  strip_rc_block "$PATH_MARK_START" "$PATH_MARK_END"
 
   {
     printf '\n%s\n' "$PATH_MARK_START"
@@ -224,29 +280,22 @@ ensure_completion_files() {
 ensure_completion_block() {
   mkdir -p "$(dirname "$INSTALL_SHELL_RC")"
   touch "$INSTALL_SHELL_RC"
-
-  if grep -Fq "$COMPLETION_MARK_START" "$INSTALL_SHELL_RC"; then
-    log_success "Shell completion configuration already present in $INSTALL_SHELL_RC"
-    return 0
-  fi
+  strip_rc_block "$COMPLETION_MARK_START" "$COMPLETION_MARK_END"
 
   {
     printf '\n%s\n' "$COMPLETION_MARK_START"
-    printf 'if [[ -d "%s" ]]; then\n' "$INSTALL_ZSH_COMPLETION_DIR"
+    printf 'if [[ -n "${ZSH_VERSION:-}" ]] && [[ -d "%s" ]]; then\n' "$INSTALL_ZSH_COMPLETION_DIR"
     printf '  fpath=("%s" $fpath)\n' "$INSTALL_ZSH_COMPLETION_DIR"
     printf '  autoload -Uz compinit\n'
     printf '  compinit\n'
+    printf 'fi\n'
+    printf 'if [[ -n "${BASH_VERSION:-}" ]] && [[ -f "%s" ]]; then\n' "$BASH_COMPLETION_PATH"
+    printf '  source "%s"\n' "$BASH_COMPLETION_PATH"
     printf 'fi\n'
     printf '%s\n' "$COMPLETION_MARK_END"
   } >> "$INSTALL_SHELL_RC"
 
   log_success "Updated $INSTALL_SHELL_RC"
-}
-
-install_command_link() {
-  mkdir -p "$INSTALL_BIN_DIR"
-  ln -sfn "$INSTALL_BIN_PATH" "$INSTALL_PATH"
-  log_success "Installed command link at $INSTALL_PATH"
 }
 
 trap cleanup EXIT
@@ -256,12 +305,10 @@ require_command curl
 require_command tar
 detect_platform
 install_binary
-install_command_link
-ensure_path_block
 ensure_completion_files
+cleanup_legacy_install
+ensure_path_block
 ensure_completion_block
 
 log_info "Open a new shell or source $INSTALL_SHELL_RC, then run: $APP_NAME jobs list"
-log_info "One-line uninstall command:"
-log_info "curl -fsSL https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/scripts/bootstrap_uninstall.sh | bash"
 log_success "Release install completed"
