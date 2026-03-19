@@ -1,17 +1,21 @@
 package util
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/mattn/go-runewidth"
+)
 
 func FormatTable(headers []string, rows [][]string) string {
 	widths := make([]int, len(headers))
 	for i, header := range headers {
-		widths[i] = len(header)
+		widths[i] = DisplayWidth(header)
 	}
 	for _, row := range rows {
 		for i := range headers {
 			value := safeCell(row, i)
-			if len(value) > widths[i] {
-				widths[i] = len(value)
+			if DisplayWidth(value) > widths[i] {
+				widths[i] = DisplayWidth(value)
 			}
 		}
 	}
@@ -28,7 +32,7 @@ func FormatTable(headers []string, rows [][]string) string {
 func renderRow(values []string, widths []int) string {
 	cells := make([]string, len(widths))
 	for i := range widths {
-		cells[i] = padRight(safeCell(values, i), widths[i])
+		cells[i] = PadDisplayRight(safeCell(values, i), widths[i])
 	}
 	return strings.Join(cells, " | ")
 }
@@ -41,11 +45,15 @@ func renderSeparator(widths []int) string {
 	return strings.Join(cells, "-+-")
 }
 
-func padRight(value string, width int) string {
-	if len(value) >= width {
+func DisplayWidth(value string) int {
+	return runewidth.StringWidth(value)
+}
+
+func PadDisplayRight(value string, width int) string {
+	if DisplayWidth(value) >= width {
 		return value
 	}
-	return value + strings.Repeat(" ", width-len(value))
+	return value + strings.Repeat(" ", width-DisplayWidth(value))
 }
 
 func safeCell(values []string, index int) string {

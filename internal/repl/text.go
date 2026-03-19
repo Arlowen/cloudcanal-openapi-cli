@@ -2,10 +2,13 @@ package repl
 
 import (
 	"cloudcanal-openapi-cli/internal/i18n"
+	"cloudcanal-openapi-cli/internal/util"
 	"fmt"
 	"strconv"
 	"strings"
 )
+
+const detailLabelWidth = 24
 
 func (s *Shell) isChinese() bool {
 	return i18n.CurrentLanguage() == i18n.Chinese
@@ -299,12 +302,20 @@ func (s *Shell) label(key string) string {
 			return "运行中"
 		case "abnormal":
 			return "异常"
+		case "cloud":
+			return "云厂商"
+		case "cluster":
+			return "集群"
 		case "owner":
 			return "负责人"
 		case "health":
 			return "健康度"
 		case "load":
 			return "负载"
+		case "privateIP":
+			return "私网 IP"
+		case "jobType":
+			return "任务类型"
 		case "lifecycleState":
 			return "生命周期"
 		}
@@ -415,12 +426,20 @@ func (s *Shell) label(key string) string {
 		return "Running"
 	case "abnormal":
 		return "Abnormal"
+	case "cloud":
+		return "Cloud"
+	case "cluster":
+		return "Cluster"
 	case "owner":
 		return "Owner"
 	case "health":
 		return "Health"
 	case "load":
 		return "Load"
+	case "privateIP":
+		return "Private IP"
+	case "jobType":
+		return "Job Type"
 	case "lifecycleState":
 		return "Lifecycle"
 	default:
@@ -429,5 +448,5 @@ func (s *Shell) label(key string) string {
 }
 
 func (s *Shell) line(label string, value string) string {
-	return "  " + label + ": " + strings.TrimSpace(value)
+	return "  " + util.PadDisplayRight(label, detailLabelWidth) + " : " + strings.TrimSpace(value)
 }

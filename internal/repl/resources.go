@@ -172,7 +172,7 @@ func (s *Shell) printClusters(options cluster.ListOptions) error {
 		return err
 	}
 
-	headers := []string{s.label("id"), s.label("name"), s.label("region"), "Cloud", s.label("workers"), s.label("running"), s.label("abnormal"), s.label("owner")}
+	headers := []string{s.label("id"), s.label("name"), s.label("region"), s.label("cloud"), s.label("workers"), s.label("running"), s.label("abnormal"), s.label("owner")}
 	rows := make([][]string, 0, len(clusters))
 	for _, item := range clusters {
 		rows = append(rows, []string{
@@ -198,7 +198,7 @@ func (s *Shell) printWorkers(options worker.ListOptions) error {
 		return err
 	}
 
-	headers := []string{s.label("id"), s.label("name"), s.label("state"), s.label("type"), "Cluster", "Private IP", s.label("health"), s.label("load")}
+	headers := []string{s.label("id"), s.label("name"), s.label("state"), s.label("type"), s.label("cluster"), s.label("privateIP"), s.label("health"), s.label("load")}
 	rows := make([][]string, 0, len(workers))
 	for _, item := range workers {
 		rows = append(rows, []string{
@@ -265,7 +265,7 @@ func (s *Shell) printSpecs(options jobconfig.ListSpecsOptions) error {
 		return err
 	}
 
-	headers := []string{s.label("id"), "Job Type", s.label("kind"), s.label("spec"), s.label("fullMB"), s.label("increMB"), s.label("checkMB")}
+	headers := []string{s.label("id"), s.label("jobType"), s.label("kind"), s.label("spec"), s.label("fullMB"), s.label("increMB"), s.label("checkMB")}
 	rows := make([][]string, 0, len(specs))
 	for _, spec := range specs {
 		rows = append(rows, []string{
