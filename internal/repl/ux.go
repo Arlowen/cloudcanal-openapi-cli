@@ -5,19 +5,6 @@ import (
 	"strings"
 )
 
-var (
-	jobsSubcommands       = []string{"list", "create", "show", "schema", "start", "stop", "delete", "replay", "attach-incre-task", "detach-incre-task", "update-incre-pos"}
-	dataSourceSubcommands = []string{"list", "add", "delete", "show"}
-	clusterSubcommands    = []string{"list"}
-	workerSubcommands     = []string{"list", "start", "stop", "delete", "modify-mem-oversold", "update-alert"}
-	consoleJobSubcommands = []string{"show"}
-	jobConfigSubcommands  = []string{"specs", "transform-job-type"}
-	schemaSubcommands     = []string{"list-trans-objs-by-meta"}
-	configSubcommands     = []string{"show", "init", "lang"}
-	langSubcommands       = []string{"show", "set"}
-	completionSubcommands = []string{"zsh", "bash"}
-)
-
 func isHelpToken(token string) bool {
 	switch strings.ToLower(strings.TrimSpace(token)) {
 	case "help", "-h", "--help":
@@ -103,7 +90,7 @@ func (s *Shell) unknownHelpText(topic string) string {
 	lines := []string{
 		i18n.T("common.errorPrefix", i18n.T("common.unknownHelpTopic", topic)),
 	}
-	if suggestion := suggestCandidate(topic, visibleHelpTopics); suggestion != "" {
+	if suggestion := suggestCandidate(topic, visibleHelpTopics()); suggestion != "" {
 		lines = append(lines, i18n.T("common.didYouMean", "help "+suggestion))
 	}
 	lines = append(lines, "", s.helpOverview())
@@ -112,7 +99,7 @@ func (s *Shell) unknownHelpText(topic string) string {
 
 func (s *Shell) printUnknownCommand(command string) {
 	s.io.Println(i18n.T("common.unknownCommand", command))
-	if suggestion := suggestCandidate(command, visibleTopLevelCommands); suggestion != "" {
+	if suggestion := suggestCandidate(command, visibleTopLevelCommands()); suggestion != "" {
 		s.io.Println(i18n.T("common.didYouMean", suggestion))
 	}
 	s.io.Println(i18n.T("common.useHelp"))
@@ -139,122 +126,20 @@ func RenderCommandHelp(tokens []string) (string, bool) {
 		return shell.renderHelp(nil), true
 	}
 
-	root := strings.ToLower(tokens[0])
 	if len(tokens) >= 2 && isHelpToken(tokens[1]) {
-		switch root {
-		case "jobs":
-			return shell.helpJobs(), true
-		case "datasources":
-			return shell.helpDataSources(), true
-		case "clusters":
-			return shell.helpClusters(), true
-		case "workers":
-			return shell.helpWorkers(), true
-		case "consolejobs":
-			return shell.helpConsoleJobs(), true
-		case "job-config", "jobconfig":
-			return shell.helpJobConfig(), true
-		case "schemas", "schema":
-			return shell.helpSchemas(), true
-		case "config":
-			return shell.helpConfig(), true
-		case "lang", "language":
-			return shell.helpLanguage(), true
-		case "completion":
-			return shell.helpCompletion(), true
+		if spec := findRootCommand(tokens[0]); canRenderHelp(spec) {
+			return commandHelpText(shell, spec), true
 		}
+		return "", false
 	}
 
 	if len(tokens) < 3 || !isHelpToken(tokens[2]) {
 		return "", false
 	}
 
-	switch root {
-	case "jobs":
-		switch strings.ToLower(tokens[1]) {
-		case "list":
-			return shell.usageJobsList(), true
-		case "create":
-			return shell.usageJobCreate(), true
-		case "show", "schema", "start", "stop", "delete":
-			return shell.usageJobAction(strings.ToLower(tokens[1])), true
-		case "replay":
-			return shell.usageJobReplay(), true
-		case "attach-incre-task", "detach-incre-task":
-			return shell.usageJobAction(strings.ToLower(tokens[1])), true
-		case "update-incre-pos":
-			return shell.usageJobUpdateIncrePos(), true
-		default:
-			return shell.helpJobs(), true
-		}
-	case "datasources":
-		switch strings.ToLower(tokens[1]) {
-		case "list":
-			return shell.usageDataSourcesList(), true
-		case "add":
-			return shell.usageDataSourceAdd(), true
-		case "delete":
-			return shell.usageDataSourceAction("delete"), true
-		case "show":
-			return shell.usageDataSourceShow(), true
-		default:
-			return shell.helpDataSources(), true
-		}
-	case "clusters":
-		if strings.EqualFold(tokens[1], "list") {
-			return shell.usageClustersList(), true
-		}
-		return shell.helpClusters(), true
-	case "workers":
-		switch strings.ToLower(tokens[1]) {
-		case "list":
-			return shell.usageWorkersList(), true
-		case "start", "stop", "delete":
-			return shell.usageWorkerAction(strings.ToLower(tokens[1])), true
-		case "modify-mem-oversold":
-			return shell.usageWorkerModifyMemOverSold(), true
-		case "update-alert":
-			return shell.usageWorkerUpdateAlert(), true
-		default:
-			return shell.helpWorkers(), true
-		}
-	case "consolejobs":
-		if strings.EqualFold(tokens[1], "show") {
-			return shell.usageConsoleJobShow(), true
-		}
-		return shell.helpConsoleJobs(), true
-	case "job-config", "jobconfig":
-		if strings.EqualFold(tokens[1], "specs") {
-			return shell.usageJobConfigSpecs(), true
-		}
-		if strings.EqualFold(tokens[1], "transform-job-type") {
-			return shell.usageJobConfigTransform(), true
-		}
-		return shell.helpJobConfig(), true
-	case "schemas", "schema":
-		if strings.EqualFold(tokens[1], "list-trans-objs-by-meta") {
-			return shell.usageSchemas(), true
-		}
-		return shell.helpSchemas(), true
-	case "config":
-		switch strings.ToLower(tokens[1]) {
-		case "show":
-			return shell.usageConfigShow(), true
-		case "init":
-			return shell.usageConfigInit(), true
-		case "lang":
-			return shell.helpLanguage(), true
-		default:
-			return shell.helpConfig(), true
-		}
-	case "lang", "language":
-		return shell.helpLanguage(), true
-	case "completion":
-		if strings.EqualFold(tokens[1], "zsh") || strings.EqualFold(tokens[1], "bash") {
-			return shell.usageCompletion(), true
-		}
-		return shell.helpCompletion(), true
-	default:
+	parent := findRootCommand(tokens[0])
+	if parent == nil {
 		return "", false
 	}
+	return commandUsageOrHelpText(shell, findChildCommand(parent, tokens[1]), parent), true
 }
