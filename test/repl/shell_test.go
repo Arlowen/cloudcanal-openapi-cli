@@ -387,6 +387,36 @@ func TestShellShowsGroupedUsageOnSeparateLines(t *testing.T) {
 	}
 }
 
+func TestShellShowsNestedCommandUsage(t *testing.T) {
+	runtime := &fakeRuntime{
+		cfg:         config.AppConfig{APIBaseURL: "https://cc.example.com", AccessKey: "abcdefghijkl", SecretKey: "qrstuvwxyz1234"},
+		dataJobs:    &fakeDataJobs{},
+		dataSources: &fakeDataSources{},
+		clusters:    &fakeClusters{},
+		workers:     &fakeWorkers{},
+		consoleJobs: &fakeConsoleJobs{},
+		jobConfigs:  &fakeJobConfigs{},
+	}
+	io := testsupport.NewTestConsole()
+
+	shell := repl.NewShell(io, runtime)
+	if err := shell.ExecuteArgs([]string{"config", "lang"}); err != nil {
+		t.Fatalf("ExecuteArgs(config lang) error = %v", err)
+	}
+	if !strings.Contains(io.Output(), "config lang set <en|zh>") {
+		t.Fatalf("output missing nested usage in %q", io.Output())
+	}
+
+	io = testsupport.NewTestConsole()
+	shell = repl.NewShell(io, runtime)
+	if err := shell.ExecuteArgs([]string{"language"}); err != nil {
+		t.Fatalf("ExecuteArgs(language) error = %v", err)
+	}
+	if !strings.Contains(io.Output(), "config lang show") {
+		t.Fatalf("output missing language alias usage in %q", io.Output())
+	}
+}
+
 func TestShellClearsScreenWithAliases(t *testing.T) {
 	runtime := &fakeRuntime{
 		cfg:         config.AppConfig{APIBaseURL: "https://cc.example.com", AccessKey: "abcdefghijkl", SecretKey: "qrstuvwxyz1234"},
@@ -587,6 +617,44 @@ func TestShellUnknownHelpTopicShowsSuggestion(t *testing.T) {
 	out := io.Output()
 	if !strings.Contains(out, "Unknown help topic: clustrs") || !strings.Contains(out, "Did you mean: help clusters") {
 		t.Fatalf("output missing help suggestion in %q", out)
+	}
+}
+
+func TestShellSupportsAliasDispatch(t *testing.T) {
+	jobConfigs := &fakeJobConfigs{}
+	schemas := &fakeSchemas{}
+	runtime := &fakeRuntime{
+		cfg:         config.AppConfig{APIBaseURL: "https://cc.example.com", AccessKey: "abcdefghijkl", SecretKey: "qrstuvwxyz1234", Language: "en"},
+		dataJobs:    &fakeDataJobs{},
+		dataSources: &fakeDataSources{},
+		clusters:    &fakeClusters{},
+		workers:     &fakeWorkers{},
+		consoleJobs: &fakeConsoleJobs{},
+		jobConfigs:  jobConfigs,
+		schemas:     schemas,
+	}
+	io := testsupport.NewTestConsole()
+	shell := repl.NewShell(io, runtime)
+
+	if err := shell.ExecuteArgs([]string{"jobconfig", "specs", "--type", "SYNC"}); err != nil {
+		t.Fatalf("ExecuteArgs(jobconfig specs) error = %v", err)
+	}
+	if jobConfigs.lastOptions.DataJobType != "SYNC" {
+		t.Fatalf("jobconfig alias did not dispatch to specs handler: %+v", jobConfigs.lastOptions)
+	}
+
+	if err := shell.ExecuteArgs([]string{"schema", "list-trans-objs-by-meta", "--src-db", "demo"}); err != nil {
+		t.Fatalf("ExecuteArgs(schema list-trans-objs-by-meta) error = %v", err)
+	}
+	if schemas.lastOptions.SrcDb != "demo" {
+		t.Fatalf("schema alias did not dispatch to schema handler: %+v", schemas.lastOptions)
+	}
+
+	if err := shell.ExecuteArgs([]string{"language", "set", "zh"}); err != nil {
+		t.Fatalf("ExecuteArgs(language set zh) error = %v", err)
+	}
+	if runtime.cfg.Language != "zh" {
+		t.Fatalf("language alias did not update runtime language: %q", runtime.cfg.Language)
 	}
 }
 

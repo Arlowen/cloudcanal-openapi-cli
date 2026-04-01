@@ -8,138 +8,171 @@ import (
 )
 
 func (s *Shell) handleJobs(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageJobsGroup())
-		return nil
-	}
+	return s.dispatchRegisteredCommand(tokens)
+}
 
-	switch strings.ToLower(tokens[1]) {
-	case "list":
-		options, err := parseJobListOptions(tokens[2:])
-		if err != nil {
-			return err
-		}
-		return s.printJobs(options)
-	case "create":
-		options, err := parseFlagArgs(tokens[2:])
-		if err != nil {
-			return err
-		}
-		var request datajob.CreateJobRequest
-		if err := decodeBodyOptions(options, &request); err != nil {
-			return err
-		}
-		if err := ensureNoUnknownOptions(options); err != nil {
-			return err
-		}
-		result, err := s.runtime.DataJobs().CreateJob(request)
-		if err != nil {
-			return err
-		}
-		return s.printJobCreateResult(result)
-	case "show":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageJobAction("show"))
-			return nil
-		}
-		jobID, err := parsePositiveInt64(tokens[2], "jobId")
-		if err != nil {
-			return err
-		}
-		return s.printJob(jobID)
-	case "schema":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageJobAction("schema"))
-			return nil
-		}
-		jobID, err := parsePositiveInt64(tokens[2], "jobId")
-		if err != nil {
-			return err
-		}
-		return s.printJobSchema(jobID)
-	case "start", "stop", "delete":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageJobAction(strings.ToLower(tokens[1])))
-			return nil
-		}
-		jobID, err := parsePositiveInt64(tokens[2], "jobId")
-		if err != nil {
-			return err
-		}
-		switch strings.ToLower(tokens[1]) {
-		case "start":
-			if err := s.runtime.DataJobs().StartJob(jobID); err != nil {
-				return err
-			}
-			return s.printActionResult("job.started", "job", "started", jobID)
-		case "stop":
-			if err := s.runtime.DataJobs().StopJob(jobID); err != nil {
-				return err
-			}
-			return s.printActionResult("job.stopped", "job", "stopped", jobID)
-		default:
-			if err := s.runtime.DataJobs().DeleteJob(jobID); err != nil {
-				return err
-			}
-			return s.printActionResult("job.deleted", "job", "deleted", jobID)
-		}
-	case "replay":
-		if len(tokens) < 3 {
-			s.io.Println(s.usageJobReplay())
-			return nil
-		}
-		jobID, err := parsePositiveInt64(tokens[2], "jobId")
-		if err != nil {
-			return err
-		}
-		options, err := parseReplayOptions(tokens[3:])
-		if err != nil {
-			return err
-		}
-		if err := s.runtime.DataJobs().ReplayJob(jobID, options); err != nil {
-			return err
-		}
-		return s.printActionResult("job.replayed", "job", "replayed", jobID)
-	case "attach-incre-task", "detach-incre-task":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageJobAction(strings.ToLower(tokens[1])))
-			return nil
-		}
-		jobID, err := parsePositiveInt64(tokens[2], "jobId")
-		if err != nil {
-			return err
-		}
-		if strings.EqualFold(tokens[1], "attach-incre-task") {
-			if err := s.runtime.DataJobs().AttachIncreJob(jobID); err != nil {
-				return err
-			}
-			return s.printActionResult("job.increAttached", "job", "attach-incre-task", jobID)
-		}
-		if err := s.runtime.DataJobs().DetachIncreJob(jobID); err != nil {
-			return err
-		}
-		return s.printActionResult("job.increDetached", "job", "detach-incre-task", jobID)
-	case "update-incre-pos":
-		options, err := parseFlagArgs(tokens[2:])
-		if err != nil {
-			return err
-		}
-		var request datajob.UpdateIncrePosRequest
-		if err := decodeBodyOptions(options, &request); err != nil {
-			return err
-		}
-		if err := ensureNoUnknownOptions(options); err != nil {
-			return err
-		}
-		result, err := s.runtime.DataJobs().UpdateIncrePos(request)
-		if err != nil {
-			return err
-		}
-		return s.printUpdateIncrePosResult(request.TaskID, result)
-	default:
-		s.printUnknownSubcommand("jobs", tokens[1], jobsSubcommands, s.usageJobsGroup())
+func (s *Shell) runJobsList(tokens []string) error {
+	options, err := parseJobListOptions(tokens[2:])
+	if err != nil {
+		return err
+	}
+	return s.printJobs(options)
+}
+
+func (s *Shell) runJobsCreate(tokens []string) error {
+	options, err := parseFlagArgs(tokens[2:])
+	if err != nil {
+		return err
+	}
+	var request datajob.CreateJobRequest
+	if err := decodeBodyOptions(options, &request); err != nil {
+		return err
+	}
+	if err := ensureNoUnknownOptions(options); err != nil {
+		return err
+	}
+	result, err := s.runtime.DataJobs().CreateJob(request)
+	if err != nil {
+		return err
+	}
+	return s.printJobCreateResult(result)
+}
+
+func (s *Shell) runJobsShow(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("show"))
 		return nil
 	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	return s.printJob(jobID)
+}
+
+func (s *Shell) runJobsSchema(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("schema"))
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	return s.printJobSchema(jobID)
+}
+
+func (s *Shell) runJobsStart(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("start"))
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataJobs().StartJob(jobID); err != nil {
+		return err
+	}
+	return s.printActionResult("job.started", "job", "started", jobID)
+}
+
+func (s *Shell) runJobsStop(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("stop"))
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataJobs().StopJob(jobID); err != nil {
+		return err
+	}
+	return s.printActionResult("job.stopped", "job", "stopped", jobID)
+}
+
+func (s *Shell) runJobsDelete(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("delete"))
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataJobs().DeleteJob(jobID); err != nil {
+		return err
+	}
+	return s.printActionResult("job.deleted", "job", "deleted", jobID)
+}
+
+func (s *Shell) runJobsReplay(tokens []string) error {
+	if len(tokens) < 3 {
+		s.io.Println(s.usageJobReplay())
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	options, err := parseReplayOptions(tokens[3:])
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataJobs().ReplayJob(jobID, options); err != nil {
+		return err
+	}
+	return s.printActionResult("job.replayed", "job", "replayed", jobID)
+}
+
+func (s *Shell) runJobsAttachIncreTask(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("attach-incre-task"))
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataJobs().AttachIncreJob(jobID); err != nil {
+		return err
+	}
+	return s.printActionResult("job.increAttached", "job", "attach-incre-task", jobID)
+}
+
+func (s *Shell) runJobsDetachIncreTask(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageJobAction("detach-incre-task"))
+		return nil
+	}
+	jobID, err := parsePositiveInt64(tokens[2], "jobId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataJobs().DetachIncreJob(jobID); err != nil {
+		return err
+	}
+	return s.printActionResult("job.increDetached", "job", "detach-incre-task", jobID)
+}
+
+func (s *Shell) runJobsUpdateIncrePos(tokens []string) error {
+	options, err := parseFlagArgs(tokens[2:])
+	if err != nil {
+		return err
+	}
+	var request datajob.UpdateIncrePosRequest
+	if err := decodeBodyOptions(options, &request); err != nil {
+		return err
+	}
+	if err := ensureNoUnknownOptions(options); err != nil {
+		return err
+	}
+	result, err := s.runtime.DataJobs().UpdateIncrePos(request)
+	if err != nil {
+		return err
+	}
+	return s.printUpdateIncrePosResult(request.TaskID, result)
 }
 
 func (s *Shell) printJobs(options datajob.ListOptions) error {

@@ -14,67 +14,77 @@ import (
 )
 
 func (s *Shell) handleDataSources(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageDataSources())
-		return nil
-	}
-
-	switch strings.ToLower(tokens[1]) {
-	case "list":
-		options, err := parseDataSourceListOptions(tokens[2:])
-		if err != nil {
-			return err
-		}
-		return s.printDataSources(options)
-	case "add":
-		options, err := parseDataSourceAddOptions(tokens[2:])
-		if err != nil {
-			return err
-		}
-		result, err := s.runtime.DataSources().Add(options)
-		if err != nil {
-			return err
-		}
-		return s.printDataSourceAddResult(result)
-	case "delete":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageDataSourceAction("delete"))
-			return nil
-		}
-		dataSourceID, err := parsePositiveInt64(tokens[2], "dataSourceId")
-		if err != nil {
-			return err
-		}
-		if err := s.runtime.DataSources().Delete(dataSourceID); err != nil {
-			return err
-		}
-		return s.printActionResult("datasource.deleted", "datasource", "deleted", dataSourceID)
-	case "show":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageDataSourceShow())
-			return nil
-		}
-		dataSourceID, err := parsePositiveInt64(tokens[2], "dataSourceId")
-		if err != nil {
-			return err
-		}
-		return s.printDataSource(dataSourceID)
-	default:
-		s.printUnknownSubcommand("datasources", tokens[1], dataSourceSubcommands, s.usageDataSources())
-		return nil
-	}
+	return s.dispatchRegisteredCommand(tokens)
 }
 
 func (s *Shell) handleClusters(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageClusters())
-		return nil
-	}
-	if !strings.EqualFold(tokens[1], "list") {
-		s.printUnknownSubcommand("clusters", tokens[1], clusterSubcommands, s.usageClusters())
-		return nil
-	}
+	return s.dispatchRegisteredCommand(tokens)
+}
 
+func (s *Shell) handleWorkers(tokens []string) error {
+	return s.dispatchRegisteredCommand(tokens)
+}
+
+func (s *Shell) handleConsoleJobs(tokens []string) error {
+	return s.dispatchRegisteredCommand(tokens)
+}
+
+func (s *Shell) handleJobConfig(tokens []string) error {
+	return s.dispatchRegisteredCommand(tokens)
+}
+
+func (s *Shell) handleSchemas(tokens []string) error {
+	return s.dispatchRegisteredCommand(tokens)
+}
+
+func (s *Shell) runDataSourcesList(tokens []string) error {
+	options, err := parseDataSourceListOptions(tokens[2:])
+	if err != nil {
+		return err
+	}
+	return s.printDataSources(options)
+}
+
+func (s *Shell) runDataSourcesAdd(tokens []string) error {
+	options, err := parseDataSourceAddOptions(tokens[2:])
+	if err != nil {
+		return err
+	}
+	result, err := s.runtime.DataSources().Add(options)
+	if err != nil {
+		return err
+	}
+	return s.printDataSourceAddResult(result)
+}
+
+func (s *Shell) runDataSourcesDelete(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageDataSourceAction("delete"))
+		return nil
+	}
+	dataSourceID, err := parsePositiveInt64(tokens[2], "dataSourceId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.DataSources().Delete(dataSourceID); err != nil {
+		return err
+	}
+	return s.printActionResult("datasource.deleted", "datasource", "deleted", dataSourceID)
+}
+
+func (s *Shell) runDataSourcesShow(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageDataSourceShow())
+		return nil
+	}
+	dataSourceID, err := parsePositiveInt64(tokens[2], "dataSourceId")
+	if err != nil {
+		return err
+	}
+	return s.printDataSource(dataSourceID)
+}
+
+func (s *Shell) runClustersList(tokens []string) error {
 	options, err := parseClusterListOptions(tokens[2:])
 	if err != nil {
 		return err
@@ -82,120 +92,128 @@ func (s *Shell) handleClusters(tokens []string) error {
 	return s.printClusters(options)
 }
 
-func (s *Shell) handleWorkers(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageWorkers())
-		return nil
+func (s *Shell) runWorkersList(tokens []string) error {
+	options, err := parseWorkerListOptions(tokens[2:])
+	if err != nil {
+		return err
 	}
-
-	switch strings.ToLower(tokens[1]) {
-	case "list":
-		options, err := parseWorkerListOptions(tokens[2:])
-		if err != nil {
-			return err
-		}
-		return s.printWorkers(options)
-	case "start", "stop", "delete":
-		if len(tokens) != 3 {
-			s.io.Println(s.usageWorkerAction(strings.ToLower(tokens[1])))
-			return nil
-		}
-		workerID, err := parsePositiveInt64(tokens[2], "workerId")
-		if err != nil {
-			return err
-		}
-		if strings.EqualFold(tokens[1], "start") {
-			if err := s.runtime.Workers().Start(workerID); err != nil {
-				return err
-			}
-			return s.printActionResult("worker.started", "worker", "started", workerID)
-		}
-		if strings.EqualFold(tokens[1], "delete") {
-			if err := s.runtime.Workers().Delete(workerID); err != nil {
-				return err
-			}
-			return s.printActionResult("worker.deleted", "worker", "deleted", workerID)
-		}
-		if err := s.runtime.Workers().Stop(workerID); err != nil {
-			return err
-		}
-		return s.printActionResult("worker.stopped", "worker", "stopped", workerID)
-	case "modify-mem-oversold":
-		if len(tokens) < 3 {
-			s.io.Println(s.usageWorkerModifyMemOverSold())
-			return nil
-		}
-		workerID, err := parsePositiveInt64(tokens[2], "workerId")
-		if err != nil {
-			return err
-		}
-		options, err := parseFlagArgs(tokens[3:])
-		if err != nil {
-			return err
-		}
-		percentValue, err := parseRequiredPositiveInt64Option(options, "memOverSoldPercent", "percent", "mem-over-sold-percent")
-		if err != nil {
-			return err
-		}
-		if err := ensureNoUnknownOptions(options); err != nil {
-			return err
-		}
-		if err := s.runtime.Workers().ModifyMemOverSold(workerID, int(percentValue)); err != nil {
-			return err
-		}
-		return s.printActionResult("worker.memOverSoldUpdated", "worker", "modify-mem-oversold", workerID)
-	case "update-alert":
-		if len(tokens) < 3 {
-			s.io.Println(s.usageWorkerUpdateAlert())
-			return nil
-		}
-		workerID, err := parsePositiveInt64(tokens[2], "workerId")
-		if err != nil {
-			return err
-		}
-		options, err := parseFlagArgs(tokens[3:])
-		if err != nil {
-			return err
-		}
-		phone, err := parseRequiredBoolOption(options, "phone", "phone")
-		if err != nil {
-			return err
-		}
-		email, err := parseRequiredBoolOption(options, "email", "email")
-		if err != nil {
-			return err
-		}
-		im, err := parseRequiredBoolOption(options, "im", "im")
-		if err != nil {
-			return err
-		}
-		sms, err := parseRequiredBoolOption(options, "sms", "sms")
-		if err != nil {
-			return err
-		}
-		if err := ensureNoUnknownOptions(options); err != nil {
-			return err
-		}
-		if err := s.runtime.Workers().UpdateWorkerAlert(workerID, phone, email, im, sms); err != nil {
-			return err
-		}
-		return s.printActionResult("worker.alertUpdated", "worker", "update-alert", workerID)
-	default:
-		s.printUnknownSubcommand("workers", tokens[1], workerSubcommands, s.usageWorkers())
-		return nil
-	}
+	return s.printWorkers(options)
 }
 
-func (s *Shell) handleConsoleJobs(tokens []string) error {
+func (s *Shell) runWorkersStart(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageWorkerAction("start"))
+		return nil
+	}
+	workerID, err := parsePositiveInt64(tokens[2], "workerId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.Workers().Start(workerID); err != nil {
+		return err
+	}
+	return s.printActionResult("worker.started", "worker", "started", workerID)
+}
+
+func (s *Shell) runWorkersStop(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageWorkerAction("stop"))
+		return nil
+	}
+	workerID, err := parsePositiveInt64(tokens[2], "workerId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.Workers().Stop(workerID); err != nil {
+		return err
+	}
+	return s.printActionResult("worker.stopped", "worker", "stopped", workerID)
+}
+
+func (s *Shell) runWorkersDelete(tokens []string) error {
+	if len(tokens) != 3 {
+		s.io.Println(s.usageWorkerAction("delete"))
+		return nil
+	}
+	workerID, err := parsePositiveInt64(tokens[2], "workerId")
+	if err != nil {
+		return err
+	}
+	if err := s.runtime.Workers().Delete(workerID); err != nil {
+		return err
+	}
+	return s.printActionResult("worker.deleted", "worker", "deleted", workerID)
+}
+
+func (s *Shell) runWorkersModifyMemOversold(tokens []string) error {
+	if len(tokens) < 3 {
+		s.io.Println(s.usageWorkerModifyMemOverSold())
+		return nil
+	}
+	workerID, err := parsePositiveInt64(tokens[2], "workerId")
+	if err != nil {
+		return err
+	}
+	options, err := parseFlagArgs(tokens[3:])
+	if err != nil {
+		return err
+	}
+	percentValue, err := parseRequiredPositiveInt64Option(options, "memOverSoldPercent", "percent", "mem-over-sold-percent")
+	if err != nil {
+		return err
+	}
+	if err := ensureNoUnknownOptions(options); err != nil {
+		return err
+	}
+	if err := s.runtime.Workers().ModifyMemOverSold(workerID, int(percentValue)); err != nil {
+		return err
+	}
+	return s.printActionResult("worker.memOverSoldUpdated", "worker", "modify-mem-oversold", workerID)
+}
+
+func (s *Shell) runWorkersUpdateAlert(tokens []string) error {
+	if len(tokens) < 3 {
+		s.io.Println(s.usageWorkerUpdateAlert())
+		return nil
+	}
+	workerID, err := parsePositiveInt64(tokens[2], "workerId")
+	if err != nil {
+		return err
+	}
+	options, err := parseFlagArgs(tokens[3:])
+	if err != nil {
+		return err
+	}
+	phone, err := parseRequiredBoolOption(options, "phone", "phone")
+	if err != nil {
+		return err
+	}
+	email, err := parseRequiredBoolOption(options, "email", "email")
+	if err != nil {
+		return err
+	}
+	im, err := parseRequiredBoolOption(options, "im", "im")
+	if err != nil {
+		return err
+	}
+	sms, err := parseRequiredBoolOption(options, "sms", "sms")
+	if err != nil {
+		return err
+	}
+	if err := ensureNoUnknownOptions(options); err != nil {
+		return err
+	}
+	if err := s.runtime.Workers().UpdateWorkerAlert(workerID, phone, email, im, sms); err != nil {
+		return err
+	}
+	return s.printActionResult("worker.alertUpdated", "worker", "update-alert", workerID)
+}
+
+func (s *Shell) runConsoleJobsShow(tokens []string) error {
 	if len(tokens) != 3 {
 		s.io.Println(s.usageConsoleJobs())
 		return nil
 	}
-	if !strings.EqualFold(tokens[1], "show") {
-		s.printUnknownSubcommand("consolejobs", tokens[1], consoleJobSubcommands, s.usageConsoleJobs())
-		return nil
-	}
-
 	consoleJobID, err := parsePositiveInt64(tokens[2], "consoleJobId")
 	if err != nil {
 		return err
@@ -203,23 +221,7 @@ func (s *Shell) handleConsoleJobs(tokens []string) error {
 	return s.printConsoleJob(consoleJobID)
 }
 
-func (s *Shell) handleJobConfig(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageJobConfig())
-		return nil
-	}
-	if !strings.EqualFold(tokens[1], "specs") {
-		if !strings.EqualFold(tokens[1], "transform-job-type") {
-			s.printUnknownSubcommand("job-config", tokens[1], jobConfigSubcommands, s.usageJobConfig())
-			return nil
-		}
-		options, err := parseTransformJobTypeOptions(tokens[2:])
-		if err != nil {
-			return err
-		}
-		return s.printTransformJobType(options)
-	}
-
+func (s *Shell) runJobConfigSpecs(tokens []string) error {
 	options, err := parseListSpecsOptions(tokens[2:])
 	if err != nil {
 		return err
@@ -227,15 +229,15 @@ func (s *Shell) handleJobConfig(tokens []string) error {
 	return s.printSpecs(options)
 }
 
-func (s *Shell) handleSchemas(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageSchemas())
-		return nil
+func (s *Shell) runJobConfigTransformJobType(tokens []string) error {
+	options, err := parseTransformJobTypeOptions(tokens[2:])
+	if err != nil {
+		return err
 	}
-	if !strings.EqualFold(tokens[1], "list-trans-objs-by-meta") {
-		s.printUnknownSubcommand("schemas", tokens[1], schemaSubcommands, s.usageSchemas())
-		return nil
-	}
+	return s.printTransformJobType(options)
+}
+
+func (s *Shell) runSchemasListTransferObjects(tokens []string) error {
 	options, err := parseSchemaListOptions(tokens[2:])
 	if err != nil {
 		return err

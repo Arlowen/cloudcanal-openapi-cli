@@ -16,30 +16,7 @@ type flagSpec struct {
 const CompletionEnvVar = "CLOUDCANAL_INTERNAL_COMPLETE"
 
 var (
-	visibleTopLevelCommands = []string{
-		"help",
-		"jobs",
-		"datasources",
-		"clusters",
-		"workers",
-		"consolejobs",
-		"job-config",
-		"schemas",
-		"config",
-	}
 	visibleReplOnlyCommands = []string{"exit"}
-	visibleHelpTopics       = []string{
-		"jobs",
-		"datasources",
-		"clusters",
-		"workers",
-		"consolejobs",
-		"job-config",
-		"schemas",
-		"config",
-	}
-	boolValues   = []string{"true", "false"}
-	outputValues = []string{"text", "json"}
 )
 
 func RenderCompletionScript(args []string) (string, error) {
@@ -79,12 +56,29 @@ func (s *Shell) completeLine(line string) []string {
 }
 
 func (s *Shell) handleCompletion(tokens []string) error {
+	return s.dispatchRegisteredCommand(tokens)
+}
+
+func (s *Shell) runCompletionZsh(tokens []string) error {
+	return s.runCompletionShell(tokens, "zsh")
+}
+
+func (s *Shell) runCompletionBash(tokens []string) error {
+	return s.runCompletionShell(tokens, "bash")
+}
+
+func (s *Shell) runCompletionShell(tokens []string, shellName string) error {
 	if len(tokens) < 2 || len(tokens) > 3 {
 		s.io.Println(s.usageCompletion())
 		return nil
 	}
 
-	script, err := RenderCompletionScript(tokens[1:])
+	args := []string{shellName}
+	if len(tokens) == 3 {
+		args = append(args, tokens[2])
+	}
+
+	script, err := RenderCompletionScript(args)
 	if err != nil {
 		return err
 	}
@@ -103,7 +97,7 @@ func completeContext(context []string, prefix string, replMode bool) []string {
 		if name, valuePrefix, ok := splitInlineFlag(prefix); ok && name == "--output" {
 			return prependInlineFlag(name, matchCandidates(outputValues, valuePrefix))
 		}
-		candidates := append([]string{}, visibleTopLevelCommands...)
+		candidates := append([]string{}, visibleTopLevelCommands()...)
 		if replMode {
 			candidates = append(candidates, visibleReplOnlyCommands...)
 		}
@@ -113,162 +107,33 @@ func completeContext(context []string, prefix string, replMode bool) []string {
 		return matchCandidates(candidates, prefix)
 	}
 
-	root := strings.ToLower(context[0])
-	switch root {
-	case "help":
-		return matchCandidates(visibleHelpTopics, prefix)
-	case "completion":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, completionSubcommands...), "--help"), prefix)
-		}
-		return nil
-	case "lang", "language":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, langSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "set") {
-			return matchCandidates([]string{"en", "zh"}, prefix)
-		}
-		return nil
-	case "config":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, configSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "lang") {
-			if len(context) == 2 {
-				return matchCandidates(append(append([]string{}, langSubcommands...), "--help"), prefix)
-			}
-			if len(context) == 3 && strings.EqualFold(context[2], "set") {
-				return matchCandidates([]string{"en", "zh"}, prefix)
-			}
-		}
-		return nil
-	case "jobs":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, jobsSubcommands...), "--help"), prefix)
-		}
-		switch strings.ToLower(context[1]) {
-		case "list":
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--name"},
-				{name: "--type"},
-				{name: "--desc"},
-				{name: "--source-id"},
-				{name: "--target-id"},
-			}))
-		case "create", "update-incre-pos":
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--body"},
-				{name: "--body-file"},
-			}))
-		case "replay":
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--auto-start", values: boolValues},
-				{name: "--reset-to-created", values: boolValues},
-			}))
-		}
-		return nil
-	case "datasources":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, dataSourceSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "list") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--id"},
-				{name: "--type"},
-				{name: "--deploy-type"},
-				{name: "--host-type"},
-				{name: "--lifecycle"},
-			}))
-		}
-		if strings.EqualFold(context[1], "add") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--body"},
-				{name: "--body-file"},
-				{name: "--security-file"},
-				{name: "--secret-file"},
-			}))
-		}
-		return nil
-	case "clusters":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, clusterSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "list") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--name"},
-				{name: "--desc"},
-				{name: "--cloud"},
-				{name: "--region"},
-			}))
-		}
-		return nil
-	case "workers":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, workerSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "list") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--cluster-id"},
-				{name: "--source-id"},
-				{name: "--target-id"},
-			}))
-		}
-		if strings.EqualFold(context[1], "modify-mem-oversold") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--percent"},
-			}))
-		}
-		if strings.EqualFold(context[1], "update-alert") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--phone", values: boolValues},
-				{name: "--email", values: boolValues},
-				{name: "--im", values: boolValues},
-				{name: "--sms", values: boolValues},
-			}))
-		}
-		return nil
-	case "consolejobs":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, consoleJobSubcommands...), "--help"), prefix)
-		}
-		return nil
-	case "job-config", "jobconfig":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, jobConfigSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "specs") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--type"},
-				{name: "--initial-sync", values: boolValues},
-				{name: "--short-term-sync", values: boolValues},
-			}))
-		}
-		if strings.EqualFold(context[1], "transform-job-type") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--source-type"},
-				{name: "--target-type"},
-			}))
-		}
-		return nil
-	case "schemas", "schema":
-		if len(context) == 1 {
-			return matchCandidates(append(append([]string{}, schemaSubcommands...), "--help"), prefix)
-		}
-		if strings.EqualFold(context[1], "list-trans-objs-by-meta") {
-			return completeFlags(context[2:], prefix, withGlobalFlags([]flagSpec{
-				{name: "--src-db"},
-				{name: "--src-schema"},
-				{name: "--src-trans-obj"},
-				{name: "--dst-db"},
-				{name: "--dst-schema"},
-				{name: "--dst-tran-obj"},
-			}))
-		}
-		return nil
-	default:
+	if strings.EqualFold(context[0], "help") {
+		return matchCandidates(visibleHelpTopics(), prefix)
+	}
+
+	spec, consumed := findCommandPath(context)
+	if spec == nil {
 		return nil
 	}
+
+	if consumed == len(context) {
+		if len(spec.children) > 0 {
+			candidates := append(append([]string{}, visibleCommandNames(spec.children)...), "--help")
+			return matchCandidates(candidates, prefix)
+		}
+		if len(spec.nextArgs) > 0 && !strings.HasPrefix(prefix, "--") {
+			return matchCandidates(spec.nextArgs, prefix)
+		}
+		if len(spec.flags) == 0 {
+			return nil
+		}
+		return completeFlags(nil, prefix, withGlobalFlags(spec.flags))
+	}
+
+	if len(spec.flags) == 0 {
+		return nil
+	}
+	return completeFlags(context[consumed:], prefix, withGlobalFlags(spec.flags))
 }
 
 func completeFlags(args []string, prefix string, specs []flagSpec) []string {

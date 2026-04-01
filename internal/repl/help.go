@@ -19,35 +19,18 @@ func RenderHelp(args []string) string {
 func (s *Shell) renderHelp(args []string) string {
 	topic := ""
 	if len(args) > 0 {
-		topic = strings.ToLower(args[0])
+		topic = strings.ToLower(strings.TrimSpace(args[0]))
 	}
 
-	switch topic {
-	case "", "overview":
+	if topic == "" || topic == "overview" {
 		return s.helpOverview()
-	case "jobs":
-		return s.helpJobs()
-	case "datasources":
-		return s.helpDataSources()
-	case "clusters":
-		return s.helpClusters()
-	case "workers":
-		return s.helpWorkers()
-	case "consolejobs":
-		return s.helpConsoleJobs()
-	case "job-config", "jobconfig":
-		return s.helpJobConfig()
-	case "schemas", "schema":
-		return s.helpSchemas()
-	case "config":
-		return s.helpConfig()
-	case "lang", "language":
-		return s.helpLanguage()
-	case "completion":
-		return s.helpCompletion()
-	default:
-		return s.unknownHelpText(topic)
 	}
+
+	if spec := findRootCommand(topic); canRenderHelp(spec) {
+		return commandHelpText(s, spec)
+	}
+
+	return s.unknownHelpText(topic)
 }
 
 func (s *Shell) helpOverview() string {

@@ -92,126 +92,102 @@ func (s *Shell) handleTokens(tokens []string) error {
 		return nil
 	}
 
-	switch strings.ToLower(tokens[0]) {
-	case "clear", "cls":
-		s.io.ClearScreen()
-		return nil
-	case "completion":
-		return wrapCommandError(s.handleCompletion(tokens), format)
-	case "__complete":
-		s.printHiddenCompletions(tokens[1:])
-		return nil
-	case "jobs":
-		return wrapCommandError(s.handleJobs(tokens), format)
-	case "datasources":
-		return wrapCommandError(s.handleDataSources(tokens), format)
-	case "clusters":
-		return wrapCommandError(s.handleClusters(tokens), format)
-	case "workers":
-		return wrapCommandError(s.handleWorkers(tokens), format)
-	case "consolejobs":
-		return wrapCommandError(s.handleConsoleJobs(tokens), format)
-	case "job-config", "jobconfig":
-		return wrapCommandError(s.handleJobConfig(tokens), format)
-	case "schemas", "schema":
-		return wrapCommandError(s.handleSchemas(tokens), format)
-	case "config":
-		return wrapCommandError(s.handleConfig(tokens), format)
-	case "lang", "language":
-		return wrapCommandError(s.handleLang(tokens), format)
-	default:
-		s.printUnknownCommand(tokens[0])
-		return nil
+	if spec := findRootCommand(tokens[0]); spec != nil && spec.run != nil {
+		return wrapCommandError(spec.run(s, tokens), format)
 	}
+
+	s.printUnknownCommand(tokens[0])
+	return nil
 }
 
 func (s *Shell) handleConfig(tokens []string) error {
-	if len(tokens) < 2 {
-		s.io.Println(s.usageConfig())
-		return nil
-	}
-	switch strings.ToLower(tokens[1]) {
-	case "show":
-		if len(tokens) != 2 {
-			s.io.Println(s.usageConfigShow())
-			return nil
-		}
-		cfg := s.runtime.Config()
-		if s.isJSONOutput() {
-			return s.printJSON(map[string]any{
-				"apiBaseUrl":                 cfg.APIBaseURL,
-				"accessKeyMasked":            util.MaskSecret(cfg.AccessKey),
-				"language":                   cfg.NormalizedLanguage(),
-				"httpTimeoutSeconds":         cfg.HTTPTimeoutSecondsValue(),
-				"httpReadMaxRetries":         cfg.HTTPReadMaxRetriesValue(),
-				"httpReadRetryBackoffMillis": cfg.HTTPReadRetryBackoffMillisValue(),
-			})
-		}
-		s.io.Println(i18n.T("config.apiBaseUrlLabel") + ": " + cfg.APIBaseURL)
-		s.io.Println(i18n.T("config.accessKeyLabel") + ": " + util.MaskSecret(cfg.AccessKey))
-		s.io.Println(i18n.T("config.languageLabel") + ": " + cfg.NormalizedLanguage())
-		s.io.Println(i18n.T("config.httpTimeoutLabel") + ": " + strconv.Itoa(cfg.HTTPTimeoutSecondsValue()))
-		s.io.Println(i18n.T("config.httpReadMaxRetriesLabel") + ": " + strconv.Itoa(cfg.HTTPReadMaxRetriesValue()))
-		s.io.Println(i18n.T("config.httpReadRetryBackoffMillisLabel") + ": " + strconv.Itoa(cfg.HTTPReadRetryBackoffMillisValue()))
-		return nil
-	case "init":
-		if len(tokens) != 2 {
-			s.io.Println(s.usageConfigInit())
-			return nil
-		}
-		updated, err := s.runtime.Reinitialize(s.io)
-		if err != nil {
-			return err
-		}
-		if updated {
-			s.io.Println(i18n.T("runtime.configUpdated"))
-		}
-		return nil
-	case "lang":
-		return s.handleLanguageTokens(tokens[2:], "config lang", s.usageConfigLang())
-	default:
-		s.printUnknownSubcommand("config", tokens[1], configSubcommands, s.usageConfig())
-		return nil
-	}
+	return s.dispatchRegisteredCommand(tokens)
 }
 
 func (s *Shell) handleLang(tokens []string) error {
-	return s.handleLanguageTokens(tokens[1:], "config lang", s.usageConfigLang())
+	return s.dispatchRegisteredCommand(tokens)
 }
 
-func (s *Shell) handleLanguageTokens(tokens []string, group string, usage string) error {
-	if len(tokens) == 0 || strings.EqualFold(tokens[0], "show") {
-		if len(tokens) > 1 {
-			s.io.Println(usage)
-			return nil
-		}
-		if s.isJSONOutput() {
-			return s.printJSON(map[string]any{
-				"language":  s.runtime.Config().NormalizedLanguage(),
-				"supported": []string{"en", "zh"},
-			})
-		}
-		s.io.Println(i18n.T("lang.current", s.runtime.Config().NormalizedLanguage()))
-		s.io.Println(i18n.T("common.supportedLanguages"))
+func (s *Shell) runConfigShow(tokens []string) error {
+	if len(tokens) != 2 {
+		s.io.Println(s.usageConfigShow())
 		return nil
 	}
-	if strings.EqualFold(tokens[0], "set") {
-		if len(tokens) != 2 {
-			s.io.Println(usage)
-			return nil
-		}
-		if err := s.runtime.SetLanguage(tokens[1]); err != nil {
-			return err
-		}
-		if s.isJSONOutput() {
-			return s.printJSON(map[string]any{
-				"language": s.runtime.Config().NormalizedLanguage(),
-				"message":  i18n.T("lang.updated", i18n.DisplayName(s.runtime.Config().NormalizedLanguage())),
-			})
-		}
-		s.io.Println(i18n.T("lang.updated", i18n.DisplayName(s.runtime.Config().NormalizedLanguage())))
-		return nil
+
+	cfg := s.runtime.Config()
+	if s.isJSONOutput() {
+		return s.printJSON(map[string]any{
+			"apiBaseUrl":                 cfg.APIBaseURL,
+			"accessKeyMasked":            util.MaskSecret(cfg.AccessKey),
+			"language":                   cfg.NormalizedLanguage(),
+			"httpTimeoutSeconds":         cfg.HTTPTimeoutSecondsValue(),
+			"httpReadMaxRetries":         cfg.HTTPReadMaxRetriesValue(),
+			"httpReadRetryBackoffMillis": cfg.HTTPReadRetryBackoffMillisValue(),
+		})
 	}
-	s.printUnknownSubcommand(group, tokens[0], langSubcommands, usage)
+	s.io.Println(i18n.T("config.apiBaseUrlLabel") + ": " + cfg.APIBaseURL)
+	s.io.Println(i18n.T("config.accessKeyLabel") + ": " + util.MaskSecret(cfg.AccessKey))
+	s.io.Println(i18n.T("config.languageLabel") + ": " + cfg.NormalizedLanguage())
+	s.io.Println(i18n.T("config.httpTimeoutLabel") + ": " + strconv.Itoa(cfg.HTTPTimeoutSecondsValue()))
+	s.io.Println(i18n.T("config.httpReadMaxRetriesLabel") + ": " + strconv.Itoa(cfg.HTTPReadMaxRetriesValue()))
+	s.io.Println(i18n.T("config.httpReadRetryBackoffMillisLabel") + ": " + strconv.Itoa(cfg.HTTPReadRetryBackoffMillisValue()))
 	return nil
+}
+
+func (s *Shell) runConfigInit(tokens []string) error {
+	if len(tokens) != 2 {
+		s.io.Println(s.usageConfigInit())
+		return nil
+	}
+	updated, err := s.runtime.Reinitialize(s.io)
+	if err != nil {
+		return err
+	}
+	if updated {
+		s.io.Println(i18n.T("runtime.configUpdated"))
+	}
+	return nil
+}
+
+func (s *Shell) runLanguageShow(tokens []string) error {
+	expectedLen := languageValueIndex(tokens)
+	if len(tokens) != expectedLen {
+		s.io.Println(s.usageConfigLang())
+		return nil
+	}
+	if s.isJSONOutput() {
+		return s.printJSON(map[string]any{
+			"language":  s.runtime.Config().NormalizedLanguage(),
+			"supported": []string{"en", "zh"},
+		})
+	}
+	s.io.Println(i18n.T("lang.current", s.runtime.Config().NormalizedLanguage()))
+	s.io.Println(i18n.T("common.supportedLanguages"))
+	return nil
+}
+
+func (s *Shell) runLanguageSet(tokens []string) error {
+	valueIndex := languageValueIndex(tokens)
+	if len(tokens) != valueIndex+1 {
+		s.io.Println(s.usageConfigLang())
+		return nil
+	}
+	if err := s.runtime.SetLanguage(tokens[valueIndex]); err != nil {
+		return err
+	}
+	if s.isJSONOutput() {
+		return s.printJSON(map[string]any{
+			"language": s.runtime.Config().NormalizedLanguage(),
+			"message":  i18n.T("lang.updated", i18n.DisplayName(s.runtime.Config().NormalizedLanguage())),
+		})
+	}
+	s.io.Println(i18n.T("lang.updated", i18n.DisplayName(s.runtime.Config().NormalizedLanguage())))
+	return nil
+}
+
+func languageValueIndex(tokens []string) int {
+	if len(tokens) > 0 && strings.EqualFold(tokens[0], "config") {
+		return 3
+	}
+	return 2
 }
