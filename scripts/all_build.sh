@@ -29,7 +29,7 @@ run_step() {
   log_info "[$STEP_NO] $title"
 
   if "$@" >"$log_path" 2>&1; then
-    log_success "$title completed"
+    log_info "$title completed"
     return 0
   fi
 
@@ -47,9 +47,9 @@ STEP_NO="1/3"
 log_info "[$STEP_NO] Clean build artifacts"
 if [[ -d "$BIN_DIR" ]]; then
   rm -rf "$BIN_DIR"
-  log_success "Removed $BIN_DIR"
+  log_info "Removed $BIN_DIR"
 else
-  log_success "No existing build artifacts"
+  log_info "No existing build artifacts"
 fi
 
 STEP_NO="2/3"
@@ -58,5 +58,5 @@ run_step "Run tests" "test" make test
 STEP_NO="3/3"
 run_step "Build CLI" "build" make build
 
-log_success "Binary ready at $BIN_PATH"
+log_info "Binary ready at $BIN_PATH"
 print_run_summary "Build completed"

@@ -5,13 +5,32 @@ set -euo pipefail
 _log() {
   local level="$1"
   local color="$2"
-  shift 2
-  printf '\033[%sm[%s]\033[0m %s %s\n' "$color" "$level" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+  local stream="${3:-stdout}"
+  shift 3
+
+  local line
+  line="$(date '+%Y-%m-%d %H:%M:%S') [${level}] $*"
+
+  if [[ "$stream" == "stderr" ]]; then
+    if [[ -t 2 ]]; then
+      printf '\033[%sm%s\033[0m\n' "$color" "$line" >&2
+    else
+      printf '%s\n' "$line" >&2
+    fi
+    return
+  fi
+
+  if [[ -t 1 ]]; then
+    printf '\033[%sm%s\033[0m\n' "$color" "$line"
+    return
+  fi
+
+  printf '%s\n' "$line"
 }
 
-log_info()    { _log "INFO" "34" "$@"; }
-log_success() { _log "SUCCESS" "32" "$@"; }
-log_error()   { _log "ERROR" "31" "$@" >&2; }
+log_info()    { _log "INFO" "32" "stdout" "$@"; }
+log_success() { log_info "$@"; }
+log_error()   { _log "ERROR" "31" "stderr" "$@"; }
 
 default_shell_rc() {
   case "$(basename "${SHELL:-}")" in
