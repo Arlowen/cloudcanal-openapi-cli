@@ -1,6 +1,6 @@
 package schema
 
-import "cloudcanal-openapi-cli/internal/openapi"
+import "github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 
 const listTransObjsByMetaPath = "/cloudcanal/console/api/v1/openapi/schema/listTransObjsByMeta"
 

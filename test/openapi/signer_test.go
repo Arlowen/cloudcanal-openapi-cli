@@ -3,7 +3,7 @@ package openapi_test
 import (
 	"testing"
 
-	"cloudcanal-openapi-cli/internal/openapi"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 )
 
 func TestSignerMatchesSDKContract(t *testing.T) {

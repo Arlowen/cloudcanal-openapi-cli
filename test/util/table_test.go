@@ -1,7 +1,7 @@
 package util_test
 
 import (
-	"cloudcanal-openapi-cli/internal/util"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/util"
 	"strings"
 	"testing"
 

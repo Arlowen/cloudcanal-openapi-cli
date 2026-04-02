@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/test/testsupport"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/test/testsupport"
 )
 
 func TestWizardSavesConfigAfterSuccessfulValidation(t *testing.T) {

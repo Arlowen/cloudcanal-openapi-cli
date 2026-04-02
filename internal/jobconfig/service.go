@@ -1,8 +1,8 @@
 package jobconfig
 
 import (
-	"cloudcanal-openapi-cli/internal/openapi"
 	"encoding/json"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 )
 
 const (

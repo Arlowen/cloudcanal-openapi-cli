@@ -1,7 +1,7 @@
 package datajob
 
 import (
-	"cloudcanal-openapi-cli/internal/openapi"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 )
 
 const (

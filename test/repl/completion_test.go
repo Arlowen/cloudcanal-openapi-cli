@@ -1,9 +1,9 @@
 package repl_test
 
 import (
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/repl"
-	"cloudcanal-openapi-cli/test/testsupport"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/repl"
+	"github.com/ClouGence/cloudcanal-openapi-cli/test/testsupport"
 	"strings"
 	"testing"
 )

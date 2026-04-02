@@ -45,7 +45,7 @@ default_shell_rc() {
 }
 
 APP_NAME="${APP_NAME:-cloudcanal}"
-REPO_OWNER="${REPO_OWNER:-Arlowen}"
+REPO_OWNER="${REPO_OWNER:-ClouGence}"
 REPO_NAME="${REPO_NAME:-cloudcanal-openapi-cli}"
 RELEASE_VERSION="${RELEASE_VERSION:-latest}"
 INSTALL_ROOT="${INSTALL_ROOT:-$HOME/.cloudcanal-cli}"

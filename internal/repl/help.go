@@ -1,12 +1,12 @@
 package repl
 
 import (
-	"cloudcanal-openapi-cli/internal/i18n"
 	"fmt"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
 	"strings"
 )
 
-const detailedGuideURL = "https://github.com/Arlowen/cloudcanal-openapi-cli/blob/main/docs/cloudcanal-cli-usage.md"
+const detailedGuideURL = "https://github.com/ClouGence/cloudcanal-openapi-cli/blob/main/docs/cloudcanal-cli-usage.md"
 
 func (s *Shell) printHelp(args []string) {
 	s.io.Println(s.renderHelp(args))

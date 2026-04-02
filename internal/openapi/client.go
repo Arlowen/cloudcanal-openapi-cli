@@ -2,12 +2,12 @@ package openapi
 
 import (
 	"bytes"
-	"cloudcanal-openapi-cli/internal/config"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
 	"io"
 	"net"
 	"net/http"

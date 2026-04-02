@@ -1,7 +1,7 @@
 package testsupport
 
 import (
-	"cloudcanal-openapi-cli/internal/console"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/console"
 	"io"
 	"strings"
 )

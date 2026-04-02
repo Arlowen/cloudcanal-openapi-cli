@@ -1,10 +1,10 @@
 package schema_test
 
 import (
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/openapi"
-	"cloudcanal-openapi-cli/internal/schema"
 	"encoding/json"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/schema"
 	"net/http"
 	"net/http/httptest"
 	"testing"

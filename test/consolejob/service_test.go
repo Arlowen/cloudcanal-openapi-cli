@@ -1,9 +1,9 @@
 package consolejob_test
 
 import (
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/consolejob"
-	"cloudcanal-openapi-cli/internal/openapi"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/consolejob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 	"net/http"
 	"net/http/httptest"
 	"testing"

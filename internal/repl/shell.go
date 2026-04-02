@@ -1,10 +1,10 @@
 package repl
 
 import (
-	"cloudcanal-openapi-cli/internal/app"
-	"cloudcanal-openapi-cli/internal/console"
-	"cloudcanal-openapi-cli/internal/i18n"
-	"cloudcanal-openapi-cli/internal/util"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/app"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/console"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/util"
 	"io"
 	"strconv"
 	"strings"

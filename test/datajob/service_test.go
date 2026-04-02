@@ -1,10 +1,10 @@
 package datajob_test
 
 import (
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/datajob"
-	"cloudcanal-openapi-cli/internal/openapi"
 	"encoding/json"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datajob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 	"net/http"
 	"net/http/httptest"
 	"testing"

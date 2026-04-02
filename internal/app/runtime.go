@@ -1,17 +1,17 @@
 package app
 
 import (
-	"cloudcanal-openapi-cli/internal/cluster"
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/console"
-	"cloudcanal-openapi-cli/internal/consolejob"
-	"cloudcanal-openapi-cli/internal/datajob"
-	"cloudcanal-openapi-cli/internal/datasource"
-	"cloudcanal-openapi-cli/internal/i18n"
-	"cloudcanal-openapi-cli/internal/jobconfig"
-	"cloudcanal-openapi-cli/internal/openapi"
-	ccschema "cloudcanal-openapi-cli/internal/schema"
-	"cloudcanal-openapi-cli/internal/worker"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/cluster"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/console"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/consolejob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datajob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datasource"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/jobconfig"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
+	ccschema "github.com/ClouGence/cloudcanal-openapi-cli/internal/schema"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/worker"
 )
 
 type RuntimeContext interface {

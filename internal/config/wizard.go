@@ -1,9 +1,9 @@
 package config
 
 import (
-	"cloudcanal-openapi-cli/internal/console"
-	"cloudcanal-openapi-cli/internal/i18n"
 	"errors"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/console"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
 	"io"
 	"strings"
 )

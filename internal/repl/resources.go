@@ -1,14 +1,14 @@
 package repl
 
 import (
-	"cloudcanal-openapi-cli/internal/cluster"
-	"cloudcanal-openapi-cli/internal/datasource"
-	"cloudcanal-openapi-cli/internal/jobconfig"
-	ccschema "cloudcanal-openapi-cli/internal/schema"
-	"cloudcanal-openapi-cli/internal/util"
-	"cloudcanal-openapi-cli/internal/worker"
 	"encoding/json"
 	"fmt"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/cluster"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datasource"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/jobconfig"
+	ccschema "github.com/ClouGence/cloudcanal-openapi-cli/internal/schema"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/util"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/worker"
 	"strconv"
 	"strings"
 )

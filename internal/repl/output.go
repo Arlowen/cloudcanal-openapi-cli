@@ -1,11 +1,11 @@
 package repl
 
 import (
-	"cloudcanal-openapi-cli/internal/i18n"
-	"cloudcanal-openapi-cli/internal/util"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/util"
 	"strings"
 )
 

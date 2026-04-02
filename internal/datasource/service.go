@@ -2,9 +2,9 @@ package datasource
 
 import (
 	"bytes"
-	"cloudcanal-openapi-cli/internal/openapi"
 	"encoding/json"
 	"fmt"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 	"io"
 	"mime/multipart"
 	"net/http"

@@ -1,8 +1,8 @@
 package repl
 
 import (
-	"cloudcanal-openapi-cli/internal/i18n"
 	"errors"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
 	"strconv"
 	"strings"
 	"unicode"

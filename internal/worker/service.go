@@ -1,6 +1,6 @@
 package worker
 
-import "cloudcanal-openapi-cli/internal/openapi"
+import "github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 
 const (
 	listPath              = "/cloudcanal/console/api/v1/openapi/worker/listworkers"

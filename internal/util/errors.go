@@ -1,9 +1,9 @@
 package util
 
 import (
-	"cloudcanal-openapi-cli/internal/i18n"
-	"cloudcanal-openapi-cli/internal/openapi"
 	"errors"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/openapi"
 	"strconv"
 	"strings"
 )

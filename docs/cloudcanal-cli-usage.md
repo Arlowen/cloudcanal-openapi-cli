@@ -32,7 +32,7 @@ cloudcanal jobs list --type SYNC --output json
 一键安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ClouGence/cloudcanal-openapi-cli/main/scripts/install.sh | bash
 ```
 
 说明：
@@ -48,7 +48,7 @@ curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main
 一键卸载：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Arlowen/cloudcanal-openapi-cli/main/scripts/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ClouGence/cloudcanal-openapi-cli/main/scripts/uninstall.sh | bash
 ```
 
 ## 初始化配置

@@ -1,8 +1,8 @@
 package repl
 
 import (
-	"cloudcanal-openapi-cli/internal/datajob"
-	"cloudcanal-openapi-cli/internal/util"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datajob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/util"
 	"strconv"
 	"strings"
 )

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
 )
 
 func TestServiceSaveAndLoad(t *testing.T) {

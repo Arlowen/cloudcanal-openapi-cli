@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"cloudcanal-openapi-cli/internal/app"
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/console"
-	"cloudcanal-openapi-cli/internal/i18n"
-	"cloudcanal-openapi-cli/internal/repl"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/app"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/console"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/i18n"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/repl"
 )
 
 func main() {

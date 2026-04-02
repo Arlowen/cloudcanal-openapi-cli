@@ -1,4 +1,4 @@
-module cloudcanal-openapi-cli
+module github.com/ClouGence/cloudcanal-openapi-cli
 
 go 1.25.0
 

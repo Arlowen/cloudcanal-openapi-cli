@@ -1,16 +1,16 @@
 package repl_test
 
 import (
-	"cloudcanal-openapi-cli/internal/cluster"
-	"cloudcanal-openapi-cli/internal/config"
-	"cloudcanal-openapi-cli/internal/consolejob"
-	"cloudcanal-openapi-cli/internal/datajob"
-	"cloudcanal-openapi-cli/internal/datasource"
-	"cloudcanal-openapi-cli/internal/jobconfig"
-	"cloudcanal-openapi-cli/internal/repl"
-	ccschema "cloudcanal-openapi-cli/internal/schema"
-	"cloudcanal-openapi-cli/internal/worker"
-	"cloudcanal-openapi-cli/test/testsupport"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/cluster"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/config"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/consolejob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datajob"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/datasource"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/jobconfig"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/repl"
+	ccschema "github.com/ClouGence/cloudcanal-openapi-cli/internal/schema"
+	"github.com/ClouGence/cloudcanal-openapi-cli/internal/worker"
+	"github.com/ClouGence/cloudcanal-openapi-cli/test/testsupport"
 	"strings"
 	"testing"
 
